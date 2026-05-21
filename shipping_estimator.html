@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shipping Cost Estimator</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #181c25;
+    --surface2: #1f2433;
+    --border: #2a3040;
+    --accent: #3b82f6;
+    --accent-glow: rgba(59,130,246,0.15);
+    --accent2: #10b981;
+    --warn: #f59e0b;
+    --text: #e8eaf0;
+    --text-muted: #6b7280;
+    --text-dim: #9ca3af;
+    --mono: 'DM Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    padding: 32px 20px 60px;
+  }
+
+  /* Header */
+  .header {
+    max-width: 900px;
+    margin: 0 auto 36px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 20px;
+  }
+  .header-title {
+    font-size: 11px;
+    font-family: var(--mono);
+    letter-spacing: 0.15em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .header h1 {
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .header-meta {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--text-muted);
+    text-align: right;
+    line-height: 1.8;
+  }
+  .header-meta span { color: var(--accent2); }
+
+  /* Main layout */
+  .main { max-width: 900px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 680px) { .main { grid-template-columns: 1fr; } }
+
+  /* Panels */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+  }
+  .panel-title {
+    font-size: 10px;
+    font-family: var(--mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .panel-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* Form fields */
+  .field { margin-bottom: 16px; }
+  .field label {
+    display: block;
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+  }
+  .field input, .field select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    padding: 9px 12px;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+  .field select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+  }
+  .field input:focus, .field select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+  .field input::placeholder { color: var(--text-muted); }
+  .field input.invalid { border-color: #ef4444; }
+
+  /* Line items */
+  .line-items { margin-bottom: 4px; }
+  .line-item {
+    display: grid;
+    grid-template-columns: 1fr 90px 28px;
+    gap: 8px;
+    align-items: end;
+    margin-bottom: 10px;
+    animation: fadeIn 0.15s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+  .line-item .field { margin-bottom: 0; }
+  .remove-btn {
+    width: 28px; height: 36px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+  .remove-btn:hover { border-color: #ef4444; color: #ef4444; background: rgba(239,68,68,0.08); }
+
+  .add-line-btn {
+    width: 100%;
+    background: transparent;
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    padding: 9px;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-top: 4px;
+  }
+  .add-line-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
+
+  /* Calculate button */
+  .calc-btn {
+    width: 100%;
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    padding: 13px;
+    cursor: pointer;
+    margin-top: 20px;
+    transition: all 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+  .calc-btn:hover { background: #2563eb; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(59,130,246,0.3); }
+  .calc-btn:active { transform: translateY(0); }
+  .calc-btn:disabled { background: var(--border); color: var(--text-muted); cursor: not-allowed; transform: none; box-shadow: none; }
+
+  /* Result panel */
+  .result-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+  }
+  .result-empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 12px;
+    text-align: center;
+    gap: 12px;
+    padding: 40px 0;
+  }
+  .result-empty svg { opacity: 0.2; }
+
+  /* Estimate display */
+  .estimate { display: none; }
+  .estimate.visible { display: block; }
+
+  .dest-label {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+    margin-bottom: 4px;
+  }
+  .dest-value {
+    font-size: 15px;
+    font-weight: 500;
+    margin-bottom: 20px;
+    color: var(--text);
+  }
+
+  .cost-display {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  .cost-label {
+    font-size: 10px;
+    font-family: var(--mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+  .cost-range {
+    font-size: 32px;
+    font-weight: 600;
+    font-family: var(--mono);
+    color: var(--accent2);
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+  .cost-midpoint {
+    font-size: 12px;
+    font-family: var(--mono);
+    color: var(--text-muted);
+    margin-top: 6px;
+  }
+  .confidence-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 14px;
+    overflow: hidden;
+  }
+  .confidence-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+  .conf-high { background: var(--accent2); }
+  .conf-med { background: var(--warn); }
+  .conf-low { background: #6b7280; }
+  .confidence-label {
+    font-size: 10px;
+    font-family: var(--mono);
+    color: var(--text-muted);
+    margin-top: 6px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* Breakdown table */
+  .breakdown-title {
+    font-size: 10px;
+    font-family: var(--mono);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+  .breakdown-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .breakdown-table th {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    text-align: left;
+    padding: 4px 0 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .breakdown-table th:last-child { text-align: right; }
+  .breakdown-table td {
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(42,48,64,0.5);
+    color: var(--text-dim);
+    vertical-align: top;
+  }
+  .breakdown-table td:last-child { text-align: right; font-family: var(--mono); color: var(--text); }
+  .breakdown-table .sku-name { font-weight: 500; color: var(--text); font-size: 12px; }
+  .breakdown-table .sku-detail { font-size: 11px; color: var(--text-muted); font-family: var(--mono); margin-top: 2px; }
+
+  .totals-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0 4px;
+    font-size: 12px;
+    font-family: var(--mono);
+    color: var(--text-muted);
+  }
+  .totals-row span:last-child { color: var(--text); }
+
+  .disclaimer {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    background: rgba(245,158,11,0.06);
+    border: 1px solid rgba(245,158,11,0.15);
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-top: 16px;
+    line-height: 1.5;
+  }
+
+  /* Error message */
+  .error-msg {
+    font-size: 12px;
+    color: #ef4444;
+    font-family: var(--mono);
+    margin-top: 8px;
+    display: none;
+  }
+  .error-msg.visible { display: block; }
+
+  /* Reset btn */
+  .reset-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    padding: 7px 14px;
+    cursor: pointer;
+    margin-top: 16px;
+    transition: all 0.15s;
+  }
+  .reset-btn:hover { border-color: var(--text-muted); color: var(--text); }
+
+  /* data badge */
+  .data-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    font-family: var(--mono);
+    color: var(--text-muted);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 3px 8px;
+  }
+  .data-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent2); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-title">Shipping Estimator</div>
+    <h1>Freight Quote Tool</h1>
+  </div>
+  <div class="header-meta">
+    <div><span>2,532</span> orders analyzed</div>
+    <div><span>47</span> active SKUs</div>
+    <div><span>357</span> US ZIP areas</div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- INPUT PANEL -->
+  <div class="panel">
+    <div class="panel-title">Order Details</div>
+
+    <!-- Ship To -->
+    <div class="field">
+      <label>Ship To — Company / Customer</label>
+      <input type="text" id="customer" placeholder="Customer name (optional)">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="field">
+        <label>City</label>
+        <input type="text" id="city" placeholder="City">
+      </div>
+      <div class="field">
+        <label>State</label>
+        <input type="text" id="state" placeholder="ST" maxlength="2" style="text-transform:uppercase">
+      </div>
+    </div>
+    <div class="field">
+      <label>ZIP Code <span style="color:#ef4444">*</span></label>
+      <input type="text" id="zipcode" placeholder="e.g. 19610" maxlength="5" id="zip">
+    </div>
+
+    <!-- Line items -->
+    <div class="panel-title" style="margin-top:8px">Line Items</div>
+    <div class="line-items" id="lineItems"></div>
+    <button class="add-line-btn" onclick="addLine()">+ Add SKU</button>
+
+    <div class="error-msg" id="errorMsg"></div>
+    <button class="calc-btn" id="calcBtn" onclick="calculate()">Calculate Shipping Estimate</button>
+  </div>
+
+  <!-- RESULT PANEL -->
+  <div class="result-panel">
+    <div class="panel-title">Estimate</div>
+
+    <div class="result-empty" id="emptyState">
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+        <rect x="8" y="10" width="32" height="28" rx="3" stroke="#6b7280" stroke-width="1.5"/>
+        <path d="M16 18h16M16 24h10M16 30h12" stroke="#6b7280" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="36" cy="34" r="7" fill="#0f1117" stroke="#6b7280" stroke-width="1.5"/>
+        <path d="M33 34h6M36 31v6" stroke="#6b7280" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <div>Enter order details and<br>click Calculate</div>
+    </div>
+
+    <div class="estimate" id="estimate">
+      <div class="dest-label">DESTINATION</div>
+      <div class="dest-value" id="destDisplay">—</div>
+
+      <div class="cost-display">
+        <div class="cost-label">Estimated Freight</div>
+        <div class="cost-range" id="costRange">—</div>
+        <div class="cost-midpoint" id="costMid"></div>
+        <div class="confidence-bar">
+          <div class="confidence-fill" id="confFill" style="width:0%"></div>
+        </div>
+        <div class="confidence-label">
+          <span id="confLabel">—</span>
+          <span id="dataPoints">—</span>
+        </div>
+      </div>
+
+      <div class="breakdown-title">Shipment Breakdown</div>
+      <table class="breakdown-table">
+        <thead>
+          <tr>
+            <th>SKU / Product</th>
+            <th style="text-align:right">Boxes</th>
+            <th style="text-align:right">Weight</th>
+          </tr>
+        </thead>
+        <tbody id="breakdownBody"></tbody>
+      </table>
+
+      <div class="totals-row">
+        <span>TOTAL WEIGHT</span>
+        <span id="totalWeight">—</span>
+      </div>
+      <div class="totals-row">
+        <span>TOTAL BOXES</span>
+        <span id="totalBoxes">—</span>
+      </div>
+
+      <div class="disclaimer" id="disclaimer"></div>
+      <button class="reset-btn" onclick="resetForm()">← New Quote</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─── EMBEDDED DATA ────────────────────────────────────────────────────────────
+const SHIPPING_DATA = {"products":[{"sku":"JD310-S","name":"LOW-PRO\u00ae HEEL - Small","unit_l":5.5,"unit_w":4.5,"unit_h":4.0,"unit_wt_oz":7.9,"pairs_per_case":12,"case_l":15.0,"case_w":12.0,"case_h":10.0,"case_wt_lbs":7.0},{"sku":"JD310-M","name":"LOW-PRO\u00ae HEEL - Medium","unit_l":5.875,"unit_w":5.0,"unit_h":4.5,"unit_wt_oz":9.7,"pairs_per_case":12,"case_l":16.0,"case_w":13.0,"case_h":11.0,"case_wt_lbs":9.0},{"sku":"JD310-L","name":"LOW-PRO\u00ae HEEL - Large","unit_l":5.875,"unit_w":5.0,"unit_h":4.5,"unit_wt_oz":10.3,"pairs_per_case":12,"case_l":16.0,"case_w":13.0,"case_h":11.0,"case_wt_lbs":10.0},{"sku":"JD310-XL","name":"LOW-PRO\u00ae HEEL - X-Large","unit_l":5.375,"unit_w":5.5,"unit_h":5.125,"unit_wt_oz":11.6,"pairs_per_case":12,"case_l":18.0,"case_w":12.0,"case_h":12.0,"case_wt_lbs":11.0},{"sku":"JD310-XXL","name":"LOW-PRO\u00ae HEEL - XX-Large","unit_l":5.375,"unit_w":5.5,"unit_h":5.125,"unit_wt_oz":13.1,"pairs_per_case":12,"case_l":18.0,"case_w":12.0,"case_h":12.0,"case_wt_lbs":12.0},{"sku":"JD325-S","name":"Heel-Grips\u2122 - Small","unit_l":5.5,"unit_w":4.5,"unit_h":4.0,"unit_wt_oz":7.9,"pairs_per_case":12,"case_l":15.0,"case_w":12.0,"case_h":10.0,"case_wt_lbs":7.0},{"sku":"JD325-M","name":"Heel-Grips\u2122 - Medium","unit_l":5.875,"unit_w":5.0,"unit_h":4.5,"unit_wt_oz":9.7,"pairs_per_case":12,"case_l":16.0,"case_w":13.0,"case_h":11.0,"case_wt_lbs":9.0},{"sku":"JD325-L","name":"Heel-Grips\u2122 - Large","unit_l":5.875,"unit_w":5.0,"unit_h":4.5,"unit_wt_oz":10.3,"pairs_per_case":12,"case_l":16.0,"case_w":13.0,"case_h":11.0,"case_wt_lbs":10.0},{"sku":"JD325-XL","name":"Heel-Grips\u2122 - X-Large","unit_l":5.375,"unit_w":5.5,"unit_h":5.125,"unit_wt_oz":11.6,"pairs_per_case":12,"case_l":18.0,"case_w":12.0,"case_h":12.0,"case_wt_lbs":11.0},{"sku":"JD325-XXL","name":"Heel-Grips\u2122 - XX-Large","unit_l":5.375,"unit_w":5.5,"unit_h":5.125,"unit_wt_oz":13.1,"pairs_per_case":12,"case_l":18.0,"case_w":12.0,"case_h":12.0,"case_wt_lbs":12.0},{"sku":"JD110","name":"Ice Breaker\u2122","unit_l":7.75,"unit_w":3.9375,"unit_h":1.5625,"unit_wt_oz":16.0,"pairs_per_case":12,"case_l":14.063,"case_w":11.75,"case_h":4.875,"case_wt_lbs":8.0},{"sku":"JD125","name":"Ice Breaker\u2122 (JD125)","unit_l":7.75,"unit_w":3.9375,"unit_h":1.5625,"unit_wt_oz":16.0,"pairs_per_case":12,"case_l":14.063,"case_w":11.75,"case_h":4.875,"case_wt_lbs":8.0},{"sku":"JD510-XS","name":"Spare Spike\u2122 - X-Small","unit_l":6.625,"unit_w":1.375,"unit_h":5.875,"unit_wt_oz":6.8,"pairs_per_case":12,"case_l":19.0,"case_w":8.0,"case_h":7.0,"case_wt_lbs":6.0},{"sku":"JD510-S","name":"Spare Spike\u2122 - Small","unit_l":6.625,"unit_w":1.375,"unit_h":5.875,"unit_wt_oz":7.4,"pairs_per_case":12,"case_l":19.0,"case_w":8.0,"case_h":7.0,"case_wt_lbs":7.0},{"sku":"JD510-M","name":"Spare Spike\u2122 - Medium","unit_l":6.625,"unit_w":1.375,"unit_h":5.875,"unit_wt_oz":8.3,"pairs_per_case":12,"case_l":19.0,"case_w":8.0,"case_h":7.0,"case_wt_lbs":7.0},{"sku":"JD510-L","name":"Spare Spike\u2122 - Large","unit_l":6.625,"unit_w":1.375,"unit_h":5.875,"unit_wt_oz":9.5,"pairs_per_case":12,"case_l":19.0,"case_w":8.0,"case_h":7.0,"case_wt_lbs":8.0},{"sku":"JD510-XL","name":"Spare Spike\u2122 - X-Large","unit_l":7.5,"unit_w":1.5,"unit_h":5.625,"unit_wt_oz":11.7,"pairs_per_case":12,"case_l":22.0,"case_w":9.0,"case_h":8.0,"case_wt_lbs":10.0},{"sku":"JD510-XXL","name":"Spare Spike\u2122 - XX-Large","unit_l":7.5,"unit_w":1.5,"unit_h":5.625,"unit_wt_oz":12.7,"pairs_per_case":12,"case_l":22.0,"case_w":9.0,"case_h":8.0,"case_wt_lbs":11.0},{"sku":"JD350-S","name":"Easy Spike - Small","unit_l":6.375,"unit_w":5.5,"unit_h":3.0625,"unit_wt_oz":7.6,"pairs_per_case":12,"case_l":21.0,"case_w":14.0,"case_h":7.0,"case_wt_lbs":7.0},{"sku":"JD350-M","name":"Easy Spike - Medium","unit_l":6.375,"unit_w":5.5,"unit_h":3.0625,"unit_wt_oz":9.2,"pairs_per_case":12,"case_l":21.0,"case_w":14.0,"case_h":7.0,"case_wt_lbs":9.0},{"sku":"JD350-L","name":"Easy Spike - Large","unit_l":6.375,"unit_w":5.5,"unit_h":3.0625,"unit_wt_oz":11.5,"pairs_per_case":12,"case_l":23.0,"case_w":15.0,"case_h":8.0,"case_wt_lbs":11.0},{"sku":"JD350-XL","name":"Easy Spike - X-Large","unit_l":7.0,"unit_w":6.25,"unit_h":3.5,"unit_wt_oz":14.7,"pairs_per_case":12,"case_l":23.0,"case_w":15.0,"case_h":8.0,"case_wt_lbs":13.0},{"sku":"JD6612-S","name":"GRIPS-Lite\u2122 - Small","unit_l":5.5,"unit_w":6.25,"unit_h":3.125,"unit_wt_oz":9.6,"pairs_per_case":12,"case_l":21.0,"case_w":14.0,"case_h":7.0,"case_wt_lbs":9.4},{"sku":"JD6612-M","name":"GRIPS-Lite\u2122 - Medium","unit_l":5.5,"unit_w":6.25,"unit_h":3.125,"unit_wt_oz":12.8,"pairs_per_case":12,"case_l":21.0,"case_w":14.0,"case_h":7.0,"case_wt_lbs":10.9},{"sku":"JD6612-L","name":"GRIPS-Lite\u2122 - Large","unit_l":5.5,"unit_w":6.25,"unit_h":3.125,"unit_wt_oz":14.4,"pairs_per_case":12,"case_l":21.0,"case_w":14.0,"case_h":7.0,"case_wt_lbs":13.0},{"sku":"JD6612-XL","name":"GRIPS-Lite\u2122 - X-Large","unit_l":6.25,"unit_w":6.875,"unit_h":3.5,"unit_wt_oz":17.6,"pairs_per_case":12,"case_l":23.0,"case_w":15.0,"case_h":8.0,"case_wt_lbs":15.6},{"sku":"JD6612-XXL","name":"GRIPS-Lite\u2122 - XX-Large","unit_l":6.25,"unit_w":6.875,"unit_h":3.5,"unit_wt_oz":20.8,"pairs_per_case":12,"case_l":23.0,"case_w":15.0,"case_h":8.0,"case_wt_lbs":18.1},{"sku":"JD6610-S","name":"LOW-PRO\u2122 Ice Cleat - Small","unit_l":5.5,"unit_w":6.25,"unit_h":3.125,"unit_wt_oz":16.0,"pairs_per_case":12,"case_l":21.0,"case_w":14.0,"case_h":7.0,"case_wt_lbs":9.0},{"sku":"JD6610-M","name":"LOW-PRO\u2122 Ice Cleat - Medium","unit_l":5.5,"unit_w":6.25,"unit_h":3.125,"unit_wt_oz":16.0,"pairs_per_case":12,"case_l":21.0,"case_w":14.0,"case_h":7.0,"case_wt_lbs":11.0},{"sku":"JD6610-L","name":"LOW-PRO\u2122 Ice Cleat - Large","unit_l":5.5,"unit_w":6.25,"unit_h":3.125,"unit_wt_oz":16.0,"pairs_per_case":12,"case_l":21.0,"case_w":14.0,"case_h":7.0,"case_wt_lbs":13.0},{"sku":"JD6610-XL","name":"LOW-PRO\u2122 Ice Cleat - X-Large","unit_l":6.25,"unit_w":6.875,"unit_h":3.5,"unit_wt_oz":19.2,"pairs_per_case":12,"case_l":23.0,"case_w":15.0,"case_h":8.0,"case_wt_lbs":15.0},{"sku":"JD6610-XXL","name":"LOW-PRO\u2122 Ice Cleat - XX-Large","unit_l":6.25,"unit_w":6.875,"unit_h":3.5,"unit_wt_oz":25.6,"pairs_per_case":12,"case_l":23.0,"case_w":15.0,"case_h":8.0,"case_wt_lbs":17.0},{"sku":"JD6625-S","name":"HIGH-PRO\u2122 Ice Cleat - Small","unit_l":5.5,"unit_w":6.25,"unit_h":3.125,"unit_wt_oz":16.0,"pairs_per_case":12,"case_l":21.0,"case_w":14.0,"case_h":7.0,"case_wt_lbs":9.0},{"sku":"JD6625-M","name":"HIGH-PRO\u2122 Ice Cleat - Medium","unit_l":5.5,"unit_w":6.25,"unit_h":3.125,"unit_wt_oz":16.0,"pairs_per_case":12,"case_l":21.0,"case_w":14.0,"case_h":7.0,"case_wt_lbs":11.0},{"sku":"JD6625-L","name":"HIGH-PRO\u2122 Ice Cleat - Large","unit_l":5.5,"unit_w":6.25,"unit_h":3.125,"unit_wt_oz":19.2,"pairs_per_case":12,"case_l":21.0,"case_w":14.0,"case_h":7.0,"case_wt_lbs":13.0},{"sku":"JD6625-XL","name":"HIGH-PRO\u2122 Ice Cleat - X-Large","unit_l":6.25,"unit_w":6.875,"unit_h":3.5,"unit_wt_oz":22.4,"pairs_per_case":12,"case_l":23.0,"case_w":15.0,"case_h":8.0,"case_wt_lbs":15.0},{"sku":"JD6625-XXL","name":"HIGH-PRO\u2122 Ice Cleat - XX-Large","unit_l":6.25,"unit_w":6.875,"unit_h":3.5,"unit_wt_oz":25.6,"pairs_per_case":12,"case_l":23.0,"case_w":15.0,"case_h":8.0,"case_wt_lbs":17.0},{"sku":"JD7725-S","name":"ICE BEAST\u2122 - Small","unit_l":6.5,"unit_w":6.25,"unit_h":3.25,"unit_wt_oz":13.9,"pairs_per_case":12,"case_l":21.0,"case_w":15.0,"case_h":8.0,"case_wt_lbs":14.0},{"sku":"JD7725-M","name":"ICE BEAST\u2122 - Medium","unit_l":6.5,"unit_w":6.25,"unit_h":3.25,"unit_wt_oz":17.6,"pairs_per_case":12,"case_l":21.0,"case_w":15.0,"case_h":8.0,"case_wt_lbs":14.2},{"sku":"JD7725-L","name":"ICE BEAST\u2122 - Large","unit_l":6.5,"unit_w":6.25,"unit_h":3.25,"unit_wt_oz":17.6,"pairs_per_case":12,"case_l":21.0,"case_w":15.0,"case_h":8.0,"case_wt_lbs":14.2},{"sku":"JD7725-XL","name":"ICE BEAST\u2122 - X-Large","unit_l":7.5,"unit_w":6.5,"unit_h":3.5,"unit_wt_oz":19.2,"pairs_per_case":12,"case_l":23.0,"case_w":16.0,"case_h":8.0,"case_wt_lbs":15.3},{"sku":"JD7725-XXL","name":"ICE BEAST\u2122 - XX-Large","unit_l":7.5,"unit_w":6.5,"unit_h":3.5,"unit_wt_oz":19.2,"pairs_per_case":12,"case_l":23.0,"case_w":16.0,"case_h":8.0,"case_wt_lbs":15.5},{"sku":"JD7710-S","name":"ICE BEAST\u2122 LOW-PRO - Small","unit_l":6.5,"unit_w":6.25,"unit_h":3.25,"unit_wt_oz":13.9,"pairs_per_case":12,"case_l":21.0,"case_w":15.0,"case_h":8.0,"case_wt_lbs":14.0},{"sku":"JD7710-M","name":"ICE BEAST\u2122 LOW-PRO - Medium","unit_l":6.5,"unit_w":6.25,"unit_h":3.25,"unit_wt_oz":17.6,"pairs_per_case":12,"case_l":21.0,"case_w":15.0,"case_h":8.0,"case_wt_lbs":14.2},{"sku":"JD7710-L","name":"ICE BEAST\u2122 LOW-PRO - Large","unit_l":6.5,"unit_w":6.25,"unit_h":3.25,"unit_wt_oz":17.6,"pairs_per_case":12,"case_l":21.0,"case_w":15.0,"case_h":8.0,"case_wt_lbs":14.2},{"sku":"JD7710-XL","name":"ICE BEAST\u2122 LOW-PRO - X-Large","unit_l":7.5,"unit_w":6.5,"unit_h":3.5,"unit_wt_oz":19.2,"pairs_per_case":12,"case_l":23.0,"case_w":16.0,"case_h":8.0,"case_wt_lbs":15.3},{"sku":"JD7710-XXL","name":"ICE BEAST\u2122 LOW-PRO - XX-Large","unit_l":7.5,"unit_w":6.5,"unit_h":3.5,"unit_wt_oz":19.2,"pairs_per_case":12,"case_l":23.0,"case_w":16.0,"case_h":8.0,"case_wt_lbs":15.5}],"zip3_stats":{"997":{"rate":2.3129,"low":0.75,"high":1.4,"n":5},"980":{"rate":2.1261,"low":0.72,"high":1.45,"n":14},"974":{"rate":3.4837,"low":0.75,"high":1.4,"n":7},"840":{"rate":4.7265,"low":0.72,"high":1.45,"n":24},"860":{"rate":5.8713,"low":0.7,"high":1.45,"n":2},"895":{"rate":4.3695,"low":0.7,"high":1.45,"n":4},"995":{"rate":3.3634,"low":0.7,"high":1.45,"n":4},"991":{"rate":4.9851,"low":0.7,"high":1.45,"n":3},"982":{"rate":4.3337,"low":0.7,"high":1.45,"n":4},"977":{"rate":3.077,"low":0.7,"high":1.45,"n":2},"957":{"rate":5.2611,"low":0.7,"high":1.45,"n":2},"917":{"rate":5.8152,"low":0.7,"high":1.45,"n":2},"833":{"rate":6.9181,"low":0.7,"high":1.45,"n":2},"975":{"rate":6.9426,"low":0.7,"high":1.45,"n":2},"850":{"rate":6.0944,"low":0.75,"high":1.4,"n":5},"841":{"rate":2.8272,"low":0.7,"high":1.45,"n":3},"836":{"rate":3.8931,"low":0.7,"high":1.45,"n":2},"993":{"rate":4.1161,"low":0.75,"high":1.4,"n":5},"950":{"rate":4.2988,"low":0.7,"high":1.45,"n":2},"923":{"rate":3.9543,"low":0.7,"high":1.45,"n":2},"871":{"rate":4.873,"low":0.75,"high":1.4,"n":5},"853":{"rate":3.669,"low":0.75,"high":1.4,"n":7},"838":{"rate":5.3728,"low":0.7,"high":1.45,"n":2},"986":{"rate":4.3366,"low":0.7,"high":1.45,"n":3},"970":{"rate":2.552,"low":0.7,"high":1.45,"n":3},"894":{"rate":3.2415,"low":0.7,"high":1.45,"n":2},"827":{"rate":3.928,"low":0.7,"high":1.45,"n":4},"826":{"rate":5.5736,"low":0.7,"high":1.45,"n":2},"820":{"rate":4.5347,"low":0.7,"high":1.45,"n":2},"816":{"rate":5.0443,"low":0.72,"high":1.328,"n":10},"812":{"rate":5.2616,"low":0.7,"high":1.45,"n":2},"809":{"rate":2.9971,"low":0.7,"high":1.45,"n":4},"805":{"rate":4.7778,"low":0.75,"high":1.4,"n":8},"802":{"rate":3.1867,"low":0.72,"high":1.45,"n":13},"800":{"rate":2.7591,"low":0.808,"high":1.45,"n":11},"786":{"rate":3.5118,"low":0.7,"high":1.45,"n":4},"782":{"rate":3.6385,"low":0.913,"high":1.353,"n":17},"779":{"rate":3.8794,"low":0.7,"high":1.45,"n":2},"770":{"rate":4.2485,"low":0.7,"high":1.45,"n":4},"761":{"rate":2.4717,"low":0.7,"high":1.45,"n":4},"757":{"rate":6.2867,"low":0.7,"high":1.45,"n":2},"752":{"rate":6.3633,"low":0.7,"high":1.45,"n":2},"751":{"rate":2.9352,"low":0.7,"high":1.45,"n":3},"750":{"rate":2.6873,"low":0.7,"high":1.45,"n":3},"731":{"rate":1.7829,"low":0.7,"high":1.45,"n":2},"722":{"rate":4.5981,"low":0.75,"high":1.4,"n":7},"721":{"rate":4.1273,"low":0.7,"high":1.45,"n":2},"705":{"rate":5.9606,"low":0.7,"high":1.45,"n":4},"687":{"rate":2.7874,"low":0.7,"high":1.45,"n":3},"686":{"rate":8.2157,"low":0.7,"high":1.45,"n":2},"681":{"rate":2.8308,"low":0.75,"high":1.4,"n":5},"674":{"rate":2.751,"low":0.7,"high":1.45,"n":2},"673":{"rate":3.0836,"low":0.7,"high":1.45,"n":3},"672":{"rate":2.6085,"low":0.765,"high":1.45,"n":14},"666":{"rate":3.6594,"low":0.7,"high":1.45,"n":2},"662":{"rate":3.7455,"low":0.7,"high":1.45,"n":4},"660":{"rate":3.4048,"low":0.7,"high":1.45,"n":4},"658":{"rate":3.1402,"low":0.72,"high":1.45,"n":13},"657":{"rate":3.9482,"low":0.7,"high":1.45,"n":3},"653":{"rate":2.382,"low":0.7,"high":1.45,"n":3},"651":{"rate":6.2111,"low":0.7,"high":1.45,"n":2},"648":{"rate":5.9515,"low":0.7,"high":1.45,"n":2},"647":{"rate":3.707,"low":0.75,"high":1.4,"n":5},"646":{"rate":5.0088,"low":0.7,"high":1.45,"n":2},"641":{"rate":2.984,"low":0.72,"high":1.324,"n":15},"640":{"rate":3.0917,"low":0.79,"high":1.402,"n":13},"637":{"rate":4.3523,"low":0.7,"high":1.45,"n":2},"633":{"rate":3.6532,"low":0.7,"high":1.45,"n":3},"631":{"rate":3.1353,"low":0.823,"high":1.45,"n":10},"630":{"rate":2.7403,"low":0.7,"high":1.45,"n":2},"629":{"rate":2.5863,"low":0.7,"high":1.45,"n":2},"627":{"rate":4.4861,"low":0.7,"high":1.45,"n":2},"625":{"rate":5.5168,"low":0.7,"high":1.45,"n":2},"622":{"rate":3.6,"low":0.72,"high":1.45,"n":13},"620":{"rate":2.3228,"low":0.75,"high":1.4,"n":6},"618":{"rate":2.585,"low":0.775,"high":1.45,"n":13},"617":{"rate":2.8372,"low":0.7,"high":1.45,"n":4},"616":{"rate":4.0894,"low":0.7,"high":1.45,"n":2},"615":{"rate":1.9379,"low":0.7,"high":1.45,"n":4},"614":{"rate":3.3193,"low":0.7,"high":1.45,"n":2},"613":{"rate":5.738,"low":0.75,"high":1.4,"n":5},"611":{"rate":2.7915,"low":0.75,"high":1.4,"n":6},"610":{"rate":3.0676,"low":0.7,"high":1.45,"n":3},"609":{"rate":3.0206,"low":0.7,"high":1.45,"n":2},"607":{"rate":2.1069,"low":0.7,"high":1.45,"n":3},"606":{"rate":2.0575,"low":0.72,"high":1.45,"n":13},"600":{"rate":2.5968,"low":0.72,"high":1.45,"n":12},"605":{"rate":2.4827,"low":0.72,"high":1.202,"n":13},"604":{"rate":2.6498,"low":0.885,"high":1.45,"n":24},"601":{"rate":2.277,"low":0.72,"high":1.384,"n":23},"599":{"rate":5.8596,"low":0.7,"high":1.45,"n":2},"597":{"rate":4.513,"low":0.778,"high":1.131,"n":11},"596":{"rate":4.1109,"low":0.7,"high":1.45,"n":4},"592":{"rate":3.5425,"low":0.7,"high":1.45,"n":2},"591":{"rate":3.5125,"low":0.75,"high":1.4,"n":6},"588":{"rate":4.8474,"low":0.75,"high":1.4,"n":5},"582":{"rate":5.3385,"low":0.7,"high":1.45,"n":3},"580":{"rate":2.7081,"low":0.75,"high":1.4,"n":6},"577":{"rate":7.6667,"low":0.7,"high":1.45,"n":3},"575":{"rate":5.3146,"low":0.7,"high":1.45,"n":3},"573":{"rate":3.1769,"low":0.7,"high":1.45,"n":4},"572":{"rate":3.7849,"low":0.7,"high":1.45,"n":3},"571":{"rate":3.5109,"low":0.75,"high":1.4,"n":5},"570":{"rate":5.1452,"low":0.75,"high":1.4,"n":6},"567":{"rate":5.2703,"low":0.7,"high":1.45,"n":2},"565":{"rate":5.1118,"low":0.7,"high":1.45,"n":3},"563":{"rate":3.8486,"low":0.7,"high":1.45,"n":2},"560":{"rate":3.6967,"low":0.7,"high":1.45,"n":3},"559":{"rate":2.5567,"low":0.75,"high":1.4,"n":5},"558":{"rate":3.3417,"low":0.7,"high":1.45,"n":4},"557":{"rate":5.402,"low":0.7,"high":1.45,"n":2},"554":{"rate":3.1959,"low":0.72,"high":1.45,"n":12},"553":{"rate":2.6594,"low":0.75,"high":1.4,"n":9},"551":{"rate":2.4481,"low":0.75,"high":1.4,"n":8},"550":{"rate":2.9944,"low":0.897,"high":1.064,"n":23},"549":{"rate":2.5116,"low":0.75,"high":1.4,"n":6},"547":{"rate":4.7597,"low":0.72,"high":1.45,"n":20},"546":{"rate":3.4873,"low":0.75,"high":1.4,"n":7},"544":{"rate":4.7597,"low":0.72,"high":1.45,"n":14},"543":{"rate":4.0422,"low":0.7,"high":1.45,"n":3},"541":{"rate":1.7075,"low":0.7,"high":1.45,"n":3},"539":{"rate":3.8283,"low":0.7,"high":1.45,"n":3},"537":{"rate":2.2519,"low":0.786,"high":1.45,"n":11},"535":{"rate":2.828,"low":0.84,"high":1.45,"n":17},"532":{"rate":2.231,"low":0.879,"high":1.228,"n":12},"531":{"rate":2.6884,"low":0.794,"high":1.45,"n":12},"530":{"rate":3.0655,"low":0.777,"high":1.45,"n":15},"528":{"rate":2.1725,"low":0.7,"high":1.45,"n":3},"525":{"rate":5.2454,"low":0.7,"high":1.45,"n":2},"524":{"rate":2.2123,"low":0.75,"high":1.4,"n":8},"523":{"rate":2.7944,"low":0.7,"high":1.45,"n":2},"515":{"rate":2.8635,"low":0.7,"high":1.45,"n":3},"511":{"rate":8.0772,"low":0.7,"high":1.45,"n":2},"506":{"rate":2.405,"low":0.7,"high":1.45,"n":3},"505":{"rate":5.6125,"low":0.75,"high":1.4,"n":5},"503":{"rate":2.1898,"low":0.7,"high":1.45,"n":4},"502":{"rate":5.2173,"low":0.75,"high":1.4,"n":5},"501":{"rate":4.9609,"low":0.7,"high":1.45,"n":2},"500":{"rate":3.2887,"low":0.863,"high":1.224,"n":12},"498":{"rate":3.7561,"low":0.7,"high":1.45,"n":3},"497":{"rate":3.0118,"low":0.7,"high":1.45,"n":2},"496":{"rate":2.371,"low":0.75,"high":1.4,"n":5},"495":{"rate":2.0192,"low":0.75,"high":1.4,"n":7},"494":{"rate":2.274,"low":0.7,"high":1.45,"n":2},"493":{"rate":2.283,"low":0.75,"high":1.4,"n":7},"492":{"rate":3.2124,"low":0.7,"high":1.45,"n":2},"491":{"rate":1.453,"low":0.7,"high":1.45,"n":2},"490":{"rate":3.2772,"low":0.72,"high":1.45,"n":12},"489":{"rate":4.2125,"low":0.7,"high":1.45,"n":4},"486":{"rate":3.1218,"low":0.7,"high":1.45,"n":4},"485":{"rate":2.274,"low":0.75,"high":1.4,"n":5},"484":{"rate":3.4937,"low":0.7,"high":1.45,"n":3},"483":{"rate":2.3068,"low":0.853,"high":1.45,"n":17},"482":{"rate":2.4712,"low":0.7,"high":1.45,"n":3},"480":{"rate":2.1174,"low":0.72,"high":1.45,"n":13},"481":{"rate":2.1209,"low":0.839,"high":1.284,"n":11},"479":{"rate":3.4533,"low":0.7,"high":1.45,"n":4},"478":{"rate":3.083,"low":0.7,"high":1.45,"n":3},"476":{"rate":2.2302,"low":0.7,"high":1.45,"n":3},"471":{"rate":2.0954,"low":0.75,"high":1.4,"n":8},"468":{"rate":2.1905,"low":0.75,"high":1.4,"n":8},"467":{"rate":3.3961,"low":0.7,"high":1.45,"n":4},"466":{"rate":1.8519,"low":0.7,"high":1.45,"n":2},"463":{"rate":2.456,"low":0.75,"high":1.4,"n":6},"462":{"rate":2.2241,"low":0.72,"high":1.356,"n":26},"461":{"rate":3.4482,"low":0.72,"high":1.297,"n":14},"460":{"rate":2.58,"low":0.75,"high":1.4,"n":8},"454":{"rate":2.1242,"low":0.75,"high":1.4,"n":9},"453":{"rate":2.1601,"low":0.75,"high":1.4,"n":6},"452":{"rate":2.1871,"low":0.72,"high":1.226,"n":18},"447":{"rate":3.0979,"low":0.7,"high":1.45,"n":2},"446":{"rate":2.2747,"low":0.75,"high":1.4,"n":8},"444":{"rate":3.0637,"low":0.7,"high":1.45,"n":2},"443":{"rate":3.2617,"low":0.7,"high":1.45,"n":2},"441":{"rate":2.2726,"low":0.72,"high":1.45,"n":12},"440":{"rate":3.8541,"low":0.72,"high":1.45,"n":12},"439":{"rate":2.7902,"low":0.75,"high":1.4,"n":6},"437":{"rate":2.6156,"low":0.75,"high":1.4,"n":5},"436":{"rate":2.7588,"low":0.75,"high":1.4,"n":6},"435":{"rate":3.5015,"low":0.7,"high":1.45,"n":2},"434":{"rate":2.5114,"low":0.7,"high":1.45,"n":3},"433":{"rate":6.4286,"low":0.75,"high":1.4,"n":5},"432":{"rate":1.7316,"low":0.75,"high":1.4,"n":7},"431":{"rate":2.6496,"low":0.75,"high":1.4,"n":5},"430":{"rate":4.1238,"low":0.7,"high":1.45,"n":2},"427":{"rate":2.288,"low":0.72,"high":1.45,"n":13},"424":{"rate":9.589,"low":0.7,"high":1.45,"n":2},"423":{"rate":5.7218,"low":0.7,"high":1.45,"n":4},"421":{"rate":4.1034,"low":0.75,"high":1.4,"n":5},"420":{"rate":3.4516,"low":0.72,"high":1.45,"n":74},"410":{"rate":2.3491,"low":0.7,"high":1.45,"n":4},"405":{"rate":4.2741,"low":0.742,"high":1.45,"n":15},"403":{"rate":5.5819,"low":0.7,"high":1.45,"n":2},"402":{"rate":4.1508,"low":0.72,"high":1.45,"n":21},"381":{"rate":4.8586,"low":0.7,"high":1.45,"n":4},"379":{"rate":4.15,"low":0.7,"high":1.45,"n":3},"377":{"rate":2.5799,"low":0.75,"high":1.4,"n":6},"373":{"rate":1.6956,"low":0.7,"high":1.45,"n":2},"371":{"rate":4.2006,"low":0.7,"high":1.45,"n":4},"370":{"rate":4.0738,"low":0.75,"high":1.4,"n":6},"356":{"rate":2.8291,"low":0.7,"high":1.45,"n":2},"322":{"rate":2.2736,"low":0.75,"high":1.4,"n":6},"306":{"rate":6.6595,"low":0.7,"high":1.45,"n":2},"305":{"rate":2.0786,"low":0.72,"high":1.45,"n":21},"301":{"rate":3.6,"low":0.75,"high":1.4,"n":8},"300":{"rate":4.3525,"low":0.7,"high":1.45,"n":2},"295":{"rate":8.6387,"low":0.7,"high":1.45,"n":4},"294":{"rate":4.8,"low":0.7,"high":1.45,"n":3},"287":{"rate":6.4913,"low":0.7,"high":1.45,"n":3},"282":{"rate":1.8542,"low":0.75,"high":1.4,"n":7},"275":{"rate":4.1904,"low":0.7,"high":1.45,"n":2},"274":{"rate":2.3634,"low":0.7,"high":1.45,"n":2},"272":{"rate":2.4095,"low":0.75,"high":1.4,"n":5},"265":{"rate":2.4522,"low":0.7,"high":1.45,"n":3},"263":{"rate":3.0587,"low":0.7,"high":1.45,"n":3},"261":{"rate":2.6782,"low":0.7,"high":1.45,"n":2},"260":{"rate":2.966,"low":0.7,"high":1.45,"n":4},"250":{"rate":2.4886,"low":0.7,"high":1.45,"n":2},"245":{"rate":5.4124,"low":0.7,"high":1.45,"n":4},"242":{"rate":7.5373,"low":0.7,"high":1.45,"n":2},"240":{"rate":2.6152,"low":0.75,"high":1.4,"n":9},"236":{"rate":2.3091,"low":0.7,"high":1.45,"n":2},"232":{"rate":2.0768,"low":0.75,"high":1.4,"n":8},"229":{"rate":2.5539,"low":0.7,"high":1.45,"n":3},"225":{"rate":4.7971,"low":0.7,"high":1.45,"n":2},"224":{"rate":1.4512,"low":0.7,"high":1.45,"n":4},"221":{"rate":1.9399,"low":0.75,"high":1.4,"n":7},"216":{"rate":2.427,"low":0.75,"high":1.4,"n":9},"212":{"rate":1.7111,"low":0.792,"high":1.45,"n":14},"211":{"rate":1.7667,"low":0.7,"high":1.45,"n":3},"210":{"rate":2.6458,"low":0.7,"high":1.45,"n":2},"207":{"rate":1.9761,"low":0.75,"high":1.4,"n":5},"206":{"rate":2.8592,"low":0.7,"high":1.45,"n":3},"201":{"rate":1.9695,"low":0.721,"high":1.45,"n":23},"197":{"rate":2.1713,"low":0.75,"high":1.4,"n":5},"196":{"rate":2.1881,"low":0.917,"high":1.45,"n":12},"194":{"rate":4.1208,"low":0.7,"high":1.45,"n":4},"191":{"rate":1.9535,"low":0.75,"high":1.4,"n":8},"190":{"rate":3.3286,"low":0.7,"high":1.45,"n":2},"187":{"rate":1.5301,"low":0.7,"high":1.45,"n":3},"184":{"rate":3.4867,"low":0.75,"high":1.4,"n":6},"183":{"rate":2.1779,"low":0.75,"high":1.4,"n":5},"181":{"rate":1.9958,"low":0.75,"high":1.4,"n":6},"180":{"rate":2.3507,"low":0.854,"high":1.45,"n":22},"179":{"rate":3.2096,"low":0.75,"high":1.4,"n":6},"178":{"rate":3.1625,"low":0.7,"high":1.45,"n":3},"177":{"rate":1.4664,"low":0.7,"high":1.45,"n":3},"176":{"rate":3.465,"low":0.7,"high":1.45,"n":3},"175":{"rate":1.7442,"low":0.904,"high":1.45,"n":17},"174":{"rate":2.0854,"low":0.7,"high":1.45,"n":3},"173":{"rate":3.8854,"low":0.7,"high":1.45,"n":3},"172":{"rate":2.4893,"low":0.7,"high":1.45,"n":2},"170":{"rate":1.8548,"low":0.764,"high":1.45,"n":10},"169":{"rate":4.2854,"low":0.7,"high":1.45,"n":4},"168":{"rate":3.1,"low":0.75,"high":1.4,"n":9},"166":{"rate":2.5171,"low":0.7,"high":1.45,"n":2},"165":{"rate":2.178,"low":0.76,"high":1.388,"n":11},"163":{"rate":1.9604,"low":0.7,"high":1.45,"n":3},"161":{"rate":4.4153,"low":0.7,"high":1.45,"n":3},"160":{"rate":5.0147,"low":0.7,"high":1.45,"n":3},"152":{"rate":2.1812,"low":0.75,"high":1.4,"n":6},"156":{"rate":2.4547,"low":0.7,"high":1.45,"n":4},"155":{"rate":7.2885,"low":0.7,"high":1.45,"n":2},"153":{"rate":1.9415,"low":0.75,"high":1.4,"n":5},"151":{"rate":2.0325,"low":0.877,"high":1.45,"n":11},"150":{"rate":3.9793,"low":0.75,"high":1.4,"n":5},"146":{"rate":2.1207,"low":0.856,"high":1.45,"n":10},"142":{"rate":2.1288,"low":0.72,"high":1.45,"n":12},"140":{"rate":3.3052,"low":0.75,"high":1.4,"n":6},"139":{"rate":1.3554,"low":0.7,"high":1.45,"n":2},"138":{"rate":3.766,"low":0.7,"high":1.45,"n":2},"136":{"rate":3.1644,"low":0.75,"high":1.4,"n":5},"134":{"rate":3.86,"low":0.75,"high":1.4,"n":5},"132":{"rate":3.6471,"low":0.7,"high":1.45,"n":2},"131":{"rate":2.283,"low":0.75,"high":1.4,"n":5},"130":{"rate":2.6421,"low":0.7,"high":1.45,"n":4},"129":{"rate":4.2691,"low":0.7,"high":1.45,"n":2},"128":{"rate":4.3091,"low":0.72,"high":1.45,"n":10},"125":{"rate":2.9876,"low":0.7,"high":1.45,"n":3},"124":{"rate":2.3197,"low":0.7,"high":1.45,"n":4},"123":{"rate":1.7137,"low":0.7,"high":1.45,"n":3},"031":{"rate":1.8841,"low":0.72,"high":1.45,"n":12},"122":{"rate":3.704,"low":0.7,"high":1.45,"n":4},"121":{"rate":5.1724,"low":0.7,"high":1.45,"n":2},"120":{"rate":3.4102,"low":0.75,"high":1.4,"n":6},"119":{"rate":2.2246,"low":0.75,"high":1.4,"n":8},"118":{"rate":2.182,"low":0.75,"high":1.4,"n":5},"117":{"rate":2.0516,"low":0.75,"high":1.4,"n":9},"111":{"rate":1.9554,"low":0.75,"high":1.4,"n":5},"113":{"rate":3.8955,"low":0.7,"high":1.45,"n":3},"112":{"rate":1.714,"low":0.7,"high":1.45,"n":3},"109":{"rate":1.916,"low":0.7,"high":1.45,"n":4},"107":{"rate":1.8272,"low":0.7,"high":1.45,"n":3},"105":{"rate":2.1766,"low":0.75,"high":1.4,"n":5},"104":{"rate":1.692,"low":0.7,"high":1.45,"n":4},"103":{"rate":1.5349,"low":0.7,"high":1.45,"n":2},"088":{"rate":1.7881,"low":0.75,"high":1.4,"n":8},"086":{"rate":1.7269,"low":0.7,"high":1.45,"n":3},"085":{"rate":2.5598,"low":0.7,"high":1.45,"n":2},"082":{"rate":6.0573,"low":0.7,"high":1.45,"n":2},"081":{"rate":2.169,"low":0.7,"high":1.45,"n":3},"080":{"rate":1.7135,"low":0.75,"high":1.4,"n":6},"078":{"rate":1.2988,"low":0.7,"high":1.45,"n":3},"071":{"rate":1.4575,"low":0.871,"high":1.398,"n":30},"070":{"rate":2.0178,"low":0.72,"high":1.45,"n":14},"068":{"rate":2.0484,"low":0.75,"high":1.4,"n":9},"066":{"rate":1.8216,"low":0.7,"high":1.45,"n":4},"065":{"rate":1.7778,"low":0.7,"high":1.45,"n":4},"064":{"rate":2.2904,"low":0.75,"high":1.4,"n":6},"061":{"rate":2.2122,"low":0.804,"high":1.12,"n":10},"060":{"rate":2.2564,"low":0.72,"high":1.45,"n":23},"057":{"rate":6.1095,"low":0.7,"high":1.45,"n":2},"056":{"rate":2.3769,"low":0.7,"high":1.45,"n":3},"054":{"rate":3.569,"low":0.7,"high":1.45,"n":4},"049":{"rate":4.1784,"low":0.7,"high":1.45,"n":2},"044":{"rate":2.8197,"low":0.773,"high":1.45,"n":10},"043":{"rate":1.7824,"low":0.7,"high":1.45,"n":2},"041":{"rate":2.509,"low":0.75,"high":1.4,"n":9},"040":{"rate":7.3165,"low":0.7,"high":1.45,"n":4},"038":{"rate":2.2305,"low":0.72,"high":1.45,"n":12},"037":{"rate":2.529,"low":0.72,"high":1.45,"n":13},"035":{"rate":3.8557,"low":0.75,"high":1.4,"n":6},"033":{"rate":2.7084,"low":0.75,"high":1.4,"n":9},"032":{"rate":2.5499,"low":0.722,"high":1.45,"n":12},"030":{"rate":2.3367,"low":0.772,"high":1.45,"n":16},"029":{"rate":2.174,"low":0.75,"high":1.4,"n":7},"028":{"rate":2.6658,"low":0.72,"high":1.45,"n":24},"027":{"rate":2.5833,"low":0.75,"high":1.4,"n":5},"026":{"rate":2.2311,"low":0.7,"high":1.45,"n":3},"025":{"rate":6.2208,"low":0.7,"high":1.45,"n":2},"024":{"rate":4.642,"low":0.7,"high":1.45,"n":2},"023":{"rate":2.1792,"low":0.7,"high":1.45,"n":3},"021":{"rate":2.1225,"low":0.75,"high":1.4,"n":7},"020":{"rate":4.4575,"low":0.7,"high":1.45,"n":3},"018":{"rate":2.3622,"low":0.8,"high":1.18,"n":14},"017":{"rate":2.6227,"low":0.7,"high":1.45,"n":3},"015":{"rate":3.975,"low":0.75,"high":1.4,"n":5},"014":{"rate":1.6872,"low":0.7,"high":1.45,"n":3},"011":{"rate":1.9233,"low":0.75,"high":1.4,"n":5},"010":{"rate":5.3017,"low":0.7,"high":1.45,"n":2},"167":{"rate":4.4234,"low":0.7,"high":1.45,"n":2},"451":{"rate":6.2677,"low":0.7,"high":1.45,"n":2},"661":{"rate":2.9725,"low":0.7,"high":1.45,"n":2},"296":{"rate":5.9656,"low":0.7,"high":1.45,"n":2},"472":{"rate":3.531,"low":0.7,"high":1.45,"n":3},"226":{"rate":4.0491,"low":0.7,"high":1.45,"n":2},"723":{"rate":4.3743,"low":0.7,"high":1.45,"n":2},"034":{"rate":2.003,"low":0.7,"high":1.45,"n":2},"198":{"rate":1.5169,"low":0.7,"high":1.45,"n":3},"231":{"rate":2.3977,"low":0.7,"high":1.45,"n":2},"411":{"rate":4.7755,"low":0.7,"high":1.45,"n":2},"765":{"rate":4.6013,"low":0.7,"high":1.45,"n":2},"293":{"rate":2.6799,"low":0.7,"high":1.45,"n":2},"932":{"rate":5.3239,"low":0.7,"high":1.45,"n":2},"344":{"rate":5.07,"low":0.7,"high":1.45,"n":2},"386":{"rate":3.0427,"low":0.7,"high":1.45,"n":2}},"overall_median_rate":3.0002,"overall_low_mult":0.75,"overall_high_mult":1.45,"total_orders_analyzed":2532};
+
+// Build lookup
+const PROD_MAP = {};
+SHIPPING_DATA.products.forEach(p => { PROD_MAP[p.sku] = p; });
+
+// ─── LINE ITEM MANAGEMENT ─────────────────────────────────────────────────────
+let lineCount = 0;
+
+function buildSkuOptions() {
+  return SHIPPING_DATA.products.map(p =>
+    `<option value="${p.sku}">${p.sku} — ${p.name}</option>`
+  ).join('');
+}
+
+function addLine() {
+  lineCount++;
+  const id = `line_${lineCount}`;
+  const div = document.createElement('div');
+  div.className = 'line-item';
+  div.id = id;
+  div.innerHTML = `
+    <div class="field">
+      <label>SKU</label>
+      <select>${buildSkuOptions()}</select>
+    </div>
+    <div class="field">
+      <label>Qty</label>
+      <input type="number" min="1" max="9999" value="12" style="text-align:center">
+    </div>
+    <button class="remove-btn" onclick="removeLine('${id}')" title="Remove">×</button>
+  `;
+  document.getElementById('lineItems').appendChild(div);
+}
+
+function removeLine(id) {
+  const el = document.getElementById(id);
+  const container = document.getElementById('lineItems');
+  if (container.children.length > 1) {
+    el.remove();
+  }
+}
+
+// ─── CALCULATION ENGINE ───────────────────────────────────────────────────────
+// Consolidation rule: total pairs across ALL SKUs / 12 = boxes (rounded up).
+// Any remainder under 12 goes into one box. Weight = sum of all unit weights.
+
+function calcLineWeight(prod, qty) {
+  // Unit weight in lbs for any quantity
+  return qty * prod.unit_wt_oz / 16;
+}
+
+function getZipStat(zip5) {
+  const zip3 = zip5.substring(0, 3).padStart(3, '0');
+  return SHIPPING_DATA.zip3_stats[zip3] || null;
+}
+
+function calculate() {
+  const errorEl = document.getElementById('errorMsg');
+  errorEl.className = 'error-msg';
+
+  // Validate ZIP
+  const zip = document.getElementById('zipcode').value.trim();
+  if (!/^\d{5}$/.test(zip)) {
+    errorEl.textContent = 'Please enter a valid 5-digit US ZIP code.';
+    errorEl.className = 'error-msg visible';
+    document.getElementById('zipcode').classList.add('invalid');
+    return;
+  }
+  document.getElementById('zipcode').classList.remove('invalid');
+
+  // Collect line items
+  const lines = [];
+  const lineEls = document.getElementById('lineItems').children;
+  for (const el of lineEls) {
+    const sku = el.querySelector('select').value;
+    const qty = parseInt(el.querySelector('input').value);
+    if (!sku || isNaN(qty) || qty < 1) continue;
+    const prod = PROD_MAP[sku];
+    if (!prod) continue;
+    lines.push({ sku, qty, prod });
+  }
+
+  if (lines.length === 0) {
+    errorEl.textContent = 'Please add at least one SKU.';
+    errorEl.className = 'error-msg visible';
+    return;
+  }
+
+  // ── CONSOLIDATION LOGIC ──
+  const totalPairs = lines.reduce((sum, l) => sum + l.qty, 0);
+  const totalBoxes = Math.ceil(totalPairs / 12);
+  let totalWeight = 0;
+  const lineDetails = [];
+  for (const line of lines) {
+    const wt = calcLineWeight(line.prod, line.qty);
+    totalWeight += wt;
+    lineDetails.push({ ...line, wt });
+  }
+
+  // Get rate for this ZIP — now uses per-ZIP low/high multipliers
+  const zip3 = zip.substring(0, 3).padStart(3, '0');
+  const zipStat = getZipStat(zip);
+  const hasZipData = zipStat !== null;
+
+  let midRate, lowMult, highMult, confidence, confPct, dataNote;
+
+  if (hasZipData) {
+    midRate  = zipStat.rate;
+    lowMult  = zipStat.low;
+    highMult = zipStat.high;
+    const n  = zipStat.n;
+    confidence = n >= 10 ? 'HIGH' : n >= 5 ? 'MED' : 'LOW';
+    confPct    = n >= 10 ? 88 : n >= 5 ? 68 : 50;
+    dataNote   = `${n} historical shipment${n>1?'s':''} to ${zip3}xx area`;
+  } else {
+    midRate  = SHIPPING_DATA.overall_median_rate;
+    lowMult  = SHIPPING_DATA.overall_low_mult;
+    highMult = SHIPPING_DATA.overall_high_mult;
+    confidence = 'ESTIMATED';
+    confPct = 35;
+    dataNote = `No history for ${zip3}xx — using national median`;
+  }
+
+  const costLow = Math.max(6, totalWeight * midRate * lowMult);
+  const costMid = totalWeight * midRate;
+  const costHigh = totalWeight * midRate * highMult;
+
+  // ─── RENDER RESULTS ──────────────────────────────────────────────────────────
+  const customer = document.getElementById('customer').value.trim();
+  const city = document.getElementById('city').value.trim();
+  const state = document.getElementById('state').value.trim().toUpperCase();
+  let dest = '';
+  if (customer) dest += customer + ' — ';
+  if (city && state) dest += `${city}, ${state} ${zip}`;
+  else if (city) dest += `${city} ${zip}`;
+  else dest += `ZIP ${zip}`;
+  document.getElementById('destDisplay').textContent = dest;
+
+  document.getElementById('costRange').textContent =
+    `$${costLow.toFixed(2)} – $${costHigh.toFixed(2)}`;
+  document.getElementById('costMid').textContent =
+    `midpoint estimate $${costMid.toFixed(2)}`;
+
+  const fill = document.getElementById('confFill');
+  fill.style.width = confPct + '%';
+  fill.className = `confidence-fill ${confidence === 'HIGH' ? 'conf-high' : confidence === 'MED' ? 'conf-med' : 'conf-low'}`;
+  document.getElementById('confLabel').textContent =
+    confidence === 'HIGH' ? '● Strong data estimate' :
+    confidence === 'MED'  ? '● Moderate data estimate' :
+    confidence === 'LOW'  ? '◐ Limited area data' :
+                            '○ National average fallback';
+  document.getElementById('dataPoints').textContent = dataNote;
+
+  // Breakdown table — one row per SKU, boxes shown at order total only
+  const tbody = document.getElementById('breakdownBody');
+  tbody.innerHTML = '';
+  for (const ld of lineDetails) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>
+        <div class="sku-name">${ld.sku}</div>
+        <div class="sku-detail">${ld.prod.name} · qty ${ld.qty}</div>
+      </td>
+      <td style="text-align:right;font-family:var(--mono);color:var(--text-muted)">—</td>
+      <td style="text-align:right;font-family:var(--mono)">${ld.wt.toFixed(1)} lb</td>
+    `;
+    tbody.appendChild(tr);
+  }
+
+  document.getElementById('totalWeight').textContent = `${totalWeight.toFixed(1)} lbs`;
+  document.getElementById('totalBoxes').textContent =
+    `${totalBoxes} box${totalBoxes !== 1 ? 'es' : ''} (${totalPairs} pairs ÷ 12)`;
+
+  document.getElementById('disclaimer').textContent =
+    `Estimate based on ${SHIPPING_DATA.total_orders_analyzed.toLocaleString()} historical UPS shipments (2025–2026). ` +
+    `Box count uses consolidated packing: all pairs combined, 12 per box. ` +
+    `Actual freight may vary based on carrier surcharges, fuel adjustments, and accessorial fees.`;
+
+  // Show result
+  document.getElementById('emptyState').style.display = 'none';
+  const est = document.getElementById('estimate');
+  est.className = 'estimate visible';
+}
+
+function resetForm() {
+  document.getElementById('estimate').className = 'estimate';
+  document.getElementById('emptyState').style.display = '';
+  document.getElementById('customer').value = '';
+  document.getElementById('city').value = '';
+  document.getElementById('state').value = '';
+  document.getElementById('zipcode').value = '';
+  document.getElementById('errorMsg').className = 'error-msg';
+  document.getElementById('zipcode').classList.remove('invalid');
+  // Reset to one line
+  document.getElementById('lineItems').innerHTML = '';
+  lineCount = 0;
+  addLine();
+}
+
+// Handle Enter key on ZIP
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') calculate();
+});
+
+// Init
+addLine();
+</script>
+</body>
+</html>
