@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shipping Cost Estimator</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #181c25;
+    --surface2: #1f2433;
+    --border: #2a3040;
+    --accent: #3b82f6;
+    --accent-glow: rgba(59,130,246,0.15);
+    --accent2: #10b981;
+    --warn: #f59e0b;
+    --text: #e8eaf0;
+    --text-muted: #6b7280;
+    --text-dim: #9ca3af;
+    --mono: 'DM Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    padding: 32px 20px 60px;
+  }
+
+  /* Header */
+  .header {
+    max-width: 900px;
+    margin: 0 auto 36px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 20px;
+  }
+  .header-title {
+    font-size: 11px;
+    font-family: var(--mono);
+    letter-spacing: 0.15em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .header h1 {
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .header-meta {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--text-muted);
+    text-align: right;
+    line-height: 1.8;
+  }
+  .header-meta span { color: var(--accent2); }
+
+  /* Main layout */
+  .main { max-width: 900px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 680px) { .main { grid-template-columns: 1fr; } }
+
+  /* Panels */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+  }
+  .panel-title {
+    font-size: 10px;
+    font-family: var(--mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .panel-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* Form fields */
+  .field { margin-bottom: 16px; }
+  .field label {
+    display: block;
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+  }
+  .field input, .field select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    padding: 9px 12px;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+  .field select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+  }
+  .field input:focus, .field select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+  .field input::placeholder { color: var(--text-muted); }
+  .field input.invalid { border-color: #ef4444; }
+
+  /* Line items */
+  .line-items { margin-bottom: 4px; }
+  .line-item {
+    display: grid;
+    grid-template-columns: 1fr 90px 28px;
+    gap: 8px;
+    align-items: end;
+    margin-bottom: 10px;
+    animation: fadeIn 0.15s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+  .line-item .field { margin-bottom: 0; }
+  .remove-btn {
+    width: 28px; height: 36px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+  .remove-btn:hover { border-color: #ef4444; color: #ef4444; background: rgba(239,68,68,0.08); }
+
+  .add-line-btn {
+    width: 100%;
+    background: transparent;
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    padding: 9px;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-top: 4px;
+  }
+  .add-line-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
+
+  /* Calculate button */
+  .calc-btn {
+    width: 100%;
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    padding: 13px;
+    cursor: pointer;
+    margin-top: 20px;
+    transition: all 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+  .calc-btn:hover { background: #2563eb; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(59,130,246,0.3); }
+  .calc-btn:active { transform: translateY(0); }
+  .calc-btn:disabled { background: var(--border); color: var(--text-muted); cursor: not-allowed; transform: none; box-shadow: none; }
+
+  /* Result panel */
+  .result-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+  }
+  .result-empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 12px;
+    text-align: center;
+    gap: 12px;
+    padding: 40px 0;
+  }
+  .result-empty svg { opacity: 0.2; }
+
+  /* Estimate display */
+  .estimate { display: none; }
+  .estimate.visible { display: block; }
+
+  .dest-label {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+    margin-bottom: 4px;
+  }
+  .dest-value {
+    font-size: 15px;
+    font-weight: 500;
+    margin-bottom: 20px;
+    color: var(--text);
+  }
+
+  .cost-display {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  .cost-label {
+    font-size: 10px;
+    font-family: var(--mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+  .cost-range {
+    font-size: 17px;
+    font-weight: 500;
+    font-family: var(--mono);
+    color: var(--text-muted);
+    letter-spacing: -0.01em;
+    line-height: 1;
+  }
+  .cost-midpoint {
+    font-size: 36px;
+    font-weight: 700;
+    font-family: var(--mono);
+    color: var(--accent2);
+    letter-spacing: -0.02em;
+    margin-top: 4px;
+    line-height: 1;
+  }
+  .confidence-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 14px;
+    overflow: hidden;
+  }
+  .confidence-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+  .conf-high { background: var(--accent2); }
+  .conf-med { background: var(--warn); }
+  .conf-low { background: #6b7280; }
+  .confidence-label {
+    font-size: 10px;
+    font-family: var(--mono);
+    color: var(--text-muted);
+    margin-top: 6px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* Breakdown table */
+  .breakdown-title {
+    font-size: 10px;
+    font-family: var(--mono);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+  .breakdown-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .breakdown-table th {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    text-align: left;
+    padding: 4px 0 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .breakdown-table th:last-child { text-align: right; }
+  .breakdown-table td {
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(42,48,64,0.5);
+    color: var(--text-dim);
+    vertical-align: top;
+  }
+  .breakdown-table td:last-child { text-align: right; font-family: var(--mono); color: var(--text); }
+  .breakdown-table .sku-name { font-weight: 500; color: var(--text); font-size: 12px; }
+  .breakdown-table .sku-detail { font-size: 11px; color: var(--text-muted); font-family: var(--mono); margin-top: 2px; }
+
+  .totals-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0 4px;
+    font-size: 12px;
+    font-family: var(--mono);
+    color: var(--text-muted);
+  }
+  .totals-row span:last-child { color: var(--text); }
+
+  .disclaimer {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    background: rgba(245,158,11,0.06);
+    border: 1px solid rgba(245,158,11,0.15);
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-top: 16px;
+    line-height: 1.5;
+  }
+
+  /* Error message */
+  .error-msg {
+    font-size: 12px;
+    color: #ef4444;
+    font-family: var(--mono);
+    margin-top: 8px;
+    display: none;
+  }
+  .error-msg.visible { display: block; }
+
+  /* Reset btn */
+  .reset-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    padding: 7px 14px;
+    cursor: pointer;
+    margin-top: 16px;
+    transition: all 0.15s;
+  }
+  .reset-btn:hover { border-color: var(--text-muted); color: var(--text); }
+
+  /* data badge */
+  .data-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    font-family: var(--mono);
+    color: var(--text-muted);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 3px 8px;
+  }
+  .data-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent2); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-title">Shipping Estimator</div>
+    <h1>Freight Quote Tool</h1>
+  </div>
+  <div class="header-meta">
+    <div><span>3,610</span> orders analyzed</div>
+    <div><span>47</span> active SKUs</div>
+    <div><span>891</span> ZIP areas covered</div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- INPUT PANEL -->
+  <div class="panel">
+    <div class="panel-title">Order Details</div>
+
+    <!-- Ship To -->
+    <div class="field">
+      <label>Ship To — Company / Customer</label>
+      <input type="text" id="customer" placeholder="Customer name (optional)">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="field">
+        <label>City</label>
+        <input type="text" id="city" placeholder="City">
+      </div>
+      <div class="field">
+        <label>State</label>
+        <input type="text" id="state" placeholder="ST" maxlength="2" style="text-transform:uppercase">
+      </div>
+    </div>
+    <div class="field">
+      <label>ZIP Code <span style="color:#ef4444">*</span></label>
+      <input type="text" id="zipcode" placeholder="e.g. 19610" maxlength="5" id="zip">
+    </div>
+
+    <!-- Line items -->
+    <div class="panel-title" style="margin-top:8px">Line Items</div>
+    <div class="line-items" id="lineItems"></div>
+    <button class="add-line-btn" onclick="addLine()">+ Add SKU</button>
+
+    <div class="error-msg" id="errorMsg"></div>
+    <button class="calc-btn" id="calcBtn" onclick="calculate()">Calculate Shipping Estimate</button>
+  </div>
+
+  <!-- RESULT PANEL -->
+  <div class="result-panel">
+    <div class="panel-title">Estimate</div>
+
+    <div class="result-empty" id="emptyState">
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+        <rect x="8" y="10" width="32" height="28" rx="3" stroke="#6b7280" stroke-width="1.5"/>
+        <path d="M16 18h16M16 24h10M16 30h12" stroke="#6b7280" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="36" cy="34" r="7" fill="#0f1117" stroke="#6b7280" stroke-width="1.5"/>
+        <path d="M33 34h6M36 31v6" stroke="#6b7280" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <div>Enter order details and<br>click Calculate</div>
+    </div>
+
+    <div class="estimate" id="estimate">
+      <div class="dest-label">DESTINATION</div>
+      <div class="dest-value" id="destDisplay">—</div>
+
+      <div class="cost-display">
+        <div class="cost-label">Midpoint Estimate</div>
+        <div class="cost-midpoint" id="costMid">—</div>
+        <div style="font-size:10px;font-family:var(--mono);color:var(--text-muted);letter-spacing:0.08em;margin-top:10px;text-transform:uppercase;">Estimated Range</div>
+        <div class="cost-range" id="costRange">—</div>
+        <div class="confidence-bar">
+          <div class="confidence-fill" id="confFill" style="width:0%"></div>
+        </div>
+        <div class="confidence-label">
+          <span id="confLabel">—</span>
+          <span id="dataPoints">—</span>
+        </div>
+      </div>
+
+      <div class="breakdown-title">Shipment Breakdown</div>
+      <table class="breakdown-table">
+        <thead>
+          <tr>
+            <th>SKU / Product</th>
+            <th style="text-align:right">Boxes</th>
+            <th style="text-align:right">Weight</th>
+          </tr>
+        </thead>
+        <tbody id="breakdownBody"></tbody>
+      </table>
+
+      <div class="totals-row">
+        <span>TOTAL WEIGHT</span>
+        <span id="totalWeight">—</span>
+      </div>
+      <div class="totals-row">
+        <span>TOTAL BOXES</span>
+        <span id="totalBoxes">—</span>
+      </div>
+
+      <div class="disclaimer" id="disclaimer"></div>
+      <button class="reset-btn" onclick="resetForm()">← New Quote</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─── EMBEDDED DATA ────────────────────────────────────────────────────────────
+const SHIPPING_DATA = {"products":[{"sku":"JD310-S","name":"LOW-PRO\u00ae HEEL - Small","unit_l":5.5,"unit_w":4.5,"unit_h":4.0,"unit_wt_oz":7.9,"pairs_per_case":12,"case_l":15.0,"case_w":12.0,"case_h":10.0,"case_wt_lbs":7.0},{"sku":"JD310-M","name":"LOW-PRO\u00ae HEEL - Medium","unit_l":5.875,"unit_w":5.0,"unit_h":4.5,"unit_wt_oz":9.7,"pairs_per_case":12,"case_l":16.0,"case_w":13.0,"case_h":11.0,"case_wt_lbs":9.0},{"sku":"JD310-L","name":"LOW-PRO\u00ae HEEL - Large","unit_l":5.875,"unit_w":5.0,"unit_h":4.5,"unit_wt_oz":10.3,"pairs_per_case":12,"case_l":16.0,"case_w":13.0,"case_h":11.0,"case_wt_lbs":10.0},{"sku":"JD310-XL","name":"LOW-PRO\u00ae HEEL - X-Large","unit_l":5.375,"unit_w":5.5,"unit_h":5.125,"unit_wt_oz":11.6,"pairs_per_case":12,"case_l":18.0,"case_w":12.0,"case_h":12.0,"case_wt_lbs":11.0},{"sku":"JD310-XXL","name":"LOW-PRO\u00ae HEEL - XX-Large","unit_l":5.375,"unit_w":5.5,"unit_h":5.125,"unit_wt_oz":13.1,"pairs_per_case":12,"case_l":18.0,"case_w":12.0,"case_h":12.0,"case_wt_lbs":12.0},{"sku":"JD325-S","name":"Heel-Grips\u2122 - Small","unit_l":5.5,"unit_w":4.5,"unit_h":4.0,"unit_wt_oz":7.9,"pairs_per_case":12,"case_l":15.0,"case_w":12.0,"case_h":10.0,"case_wt_lbs":7.0},{"sku":"JD325-M","name":"Heel-Grips\u2122 - Medium","unit_l":5.875,"unit_w":5.0,"unit_h":4.5,"unit_wt_oz":9.7,"pairs_per_case":12,"case_l":16.0,"case_w":13.0,"case_h":11.0,"case_wt_lbs":9.0},{"sku":"JD325-L","name":"Heel-Grips\u2122 - Large","unit_l":5.875,"unit_w":5.0,"unit_h":4.5,"unit_wt_oz":10.3,"pairs_per_case":12,"case_l":16.0,"case_w":13.0,"case_h":11.0,"case_wt_lbs":10.0},{"sku":"JD325-XL","name":"Heel-Grips\u2122 - X-Large","unit_l":5.375,"unit_w":5.5,"unit_h":5.125,"unit_wt_oz":11.6,"pairs_per_case":12,"case_l":18.0,"case_w":12.0,"case_h":12.0,"case_wt_lbs":11.0},{"sku":"JD325-XXL","name":"Heel-Grips\u2122 - XX-Large","unit_l":5.375,"unit_w":5.5,"unit_h":5.125,"unit_wt_oz":13.1,"pairs_per_case":12,"case_l":18.0,"case_w":12.0,"case_h":12.0,"case_wt_lbs":12.0},{"sku":"JD110","name":"Ice Breaker\u2122","unit_l":7.75,"unit_w":3.9375,"unit_h":1.5625,"unit_wt_oz":16.0,"pairs_per_case":12,"case_l":14.063,"case_w":11.75,"case_h":4.875,"case_wt_lbs":8.0},{"sku":"JD125","name":"Ice Breaker\u2122 (JD125)","unit_l":7.75,"unit_w":3.9375,"unit_h":1.5625,"unit_wt_oz":16.0,"pairs_per_case":12,"case_l":14.063,"case_w":11.75,"case_h":4.875,"case_wt_lbs":8.0},{"sku":"JD510-XS","name":"Spare Spike\u2122 - X-Small","unit_l":6.625,"unit_w":1.375,"unit_h":5.875,"unit_wt_oz":6.8,"pairs_per_case":12,"case_l":19.0,"case_w":8.0,"case_h":7.0,"case_wt_lbs":6.0},{"sku":"JD510-S","name":"Spare Spike\u2122 - Small","unit_l":6.625,"unit_w":1.375,"unit_h":5.875,"unit_wt_oz":7.4,"pairs_per_case":12,"case_l":19.0,"case_w":8.0,"case_h":7.0,"case_wt_lbs":7.0},{"sku":"JD510-M","name":"Spare Spike\u2122 - Medium","unit_l":6.625,"unit_w":1.375,"unit_h":5.875,"unit_wt_oz":8.3,"pairs_per_case":12,"case_l":19.0,"case_w":8.0,"case_h":7.0,"case_wt_lbs":7.0},{"sku":"JD510-L","name":"Spare Spike\u2122 - Large","unit_l":6.625,"unit_w":1.375,"unit_h":5.875,"unit_wt_oz":9.5,"pairs_per_case":12,"case_l":19.0,"case_w":8.0,"case_h":7.0,"case_wt_lbs":8.0},{"sku":"JD510-XL","name":"Spare Spike\u2122 - X-Large","unit_l":7.5,"unit_w":1.5,"unit_h":5.625,"unit_wt_oz":11.7,"pairs_per_case":12,"case_l":22.0,"case_w":9.0,"case_h":8.0,"case_wt_lbs":10.0},{"sku":"JD510-XXL","name":"Spare Spike\u2122 - XX-Large","unit_l":7.5,"unit_w":1.5,"unit_h":5.625,"unit_wt_oz":12.7,"pairs_per_case":12,"case_l":22.0,"case_w":9.0,"case_h":8.0,"case_wt_lbs":11.0},{"sku":"JD350-S","name":"Easy Spike - Small","unit_l":6.375,"unit_w":5.5,"unit_h":3.0625,"unit_wt_oz":7.6,"pairs_per_case":12,"case_l":21.0,"case_w":14.0,"case_h":7.0,"case_wt_lbs":7.0},{"sku":"JD350-M","name":"Easy Spike - Medium","unit_l":6.375,"unit_w":5.5,"unit_h":3.0625,"unit_wt_oz":9.2,"pairs_per_case":12,"case_l":21.0,"case_w":14.0,"case_h":7.0,"case_wt_lbs":9.0},{"sku":"JD350-L","name":"Easy Spike - Large","unit_l":6.375,"unit_w":5.5,"unit_h":3.0625,"unit_wt_oz":11.5,"pairs_per_case":12,"case_l":23.0,"case_w":15.0,"case_h":8.0,"case_wt_lbs":11.0},{"sku":"JD350-XL","name":"Easy Spike - X-Large","unit_l":7.0,"unit_w":6.25,"unit_h":3.5,"unit_wt_oz":14.7,"pairs_per_case":12,"case_l":23.0,"case_w":15.0,"case_h":8.0,"case_wt_lbs":13.0},{"sku":"JD6612-S","name":"GRIPS-Lite\u2122 - Small","unit_l":5.5,"unit_w":6.25,"unit_h":3.125,"unit_wt_oz":9.6,"pairs_per_case":12,"case_l":21.0,"case_w":14.0,"case_h":7.0,"case_wt_lbs":9.4},{"sku":"JD6612-M","name":"GRIPS-Lite\u2122 - Medium","unit_l":5.5,"unit_w":6.25,"unit_h":3.125,"unit_wt_oz":12.8,"pairs_per_case":12,"case_l":21.0,"case_w":14.0,"case_h":7.0,"case_wt_lbs":10.9},{"sku":"JD6612-L","name":"GRIPS-Lite\u2122 - Large","unit_l":5.5,"unit_w":6.25,"unit_h":3.125,"unit_wt_oz":14.4,"pairs_per_case":12,"case_l":21.0,"case_w":14.0,"case_h":7.0,"case_wt_lbs":13.0},{"sku":"JD6612-XL","name":"GRIPS-Lite\u2122 - X-Large","unit_l":6.25,"unit_w":6.875,"unit_h":3.5,"unit_wt_oz":17.6,"pairs_per_case":12,"case_l":23.0,"case_w":15.0,"case_h":8.0,"case_wt_lbs":15.6},{"sku":"JD6612-XXL","name":"GRIPS-Lite\u2122 - XX-Large","unit_l":6.25,"unit_w":6.875,"unit_h":3.5,"unit_wt_oz":20.8,"pairs_per_case":12,"case_l":23.0,"case_w":15.0,"case_h":8.0,"case_wt_lbs":18.1},{"sku":"JD6610-S","name":"LOW-PRO\u2122 Ice Cleat - Small","unit_l":5.5,"unit_w":6.25,"unit_h":3.125,"unit_wt_oz":16.0,"pairs_per_case":12,"case_l":21.0,"case_w":14.0,"case_h":7.0,"case_wt_lbs":9.0},{"sku":"JD6610-M","name":"LOW-PRO\u2122 Ice Cleat - Medium","unit_l":5.5,"unit_w":6.25,"unit_h":3.125,"unit_wt_oz":16.0,"pairs_per_case":12,"case_l":21.0,"case_w":14.0,"case_h":7.0,"case_wt_lbs":11.0},{"sku":"JD6610-L","name":"LOW-PRO\u2122 Ice Cleat - Large","unit_l":5.5,"unit_w":6.25,"unit_h":3.125,"unit_wt_oz":16.0,"pairs_per_case":12,"case_l":21.0,"case_w":14.0,"case_h":7.0,"case_wt_lbs":13.0},{"sku":"JD6610-XL","name":"LOW-PRO\u2122 Ice Cleat - X-Large","unit_l":6.25,"unit_w":6.875,"unit_h":3.5,"unit_wt_oz":19.2,"pairs_per_case":12,"case_l":23.0,"case_w":15.0,"case_h":8.0,"case_wt_lbs":15.0},{"sku":"JD6610-XXL","name":"LOW-PRO\u2122 Ice Cleat - XX-Large","unit_l":6.25,"unit_w":6.875,"unit_h":3.5,"unit_wt_oz":25.6,"pairs_per_case":12,"case_l":23.0,"case_w":15.0,"case_h":8.0,"case_wt_lbs":17.0},{"sku":"JD6625-S","name":"HIGH-PRO\u2122 Ice Cleat - Small","unit_l":5.5,"unit_w":6.25,"unit_h":3.125,"unit_wt_oz":16.0,"pairs_per_case":12,"case_l":21.0,"case_w":14.0,"case_h":7.0,"case_wt_lbs":9.0},{"sku":"JD6625-M","name":"HIGH-PRO\u2122 Ice Cleat - Medium","unit_l":5.5,"unit_w":6.25,"unit_h":3.125,"unit_wt_oz":16.0,"pairs_per_case":12,"case_l":21.0,"case_w":14.0,"case_h":7.0,"case_wt_lbs":11.0},{"sku":"JD6625-L","name":"HIGH-PRO\u2122 Ice Cleat - Large","unit_l":5.5,"unit_w":6.25,"unit_h":3.125,"unit_wt_oz":19.2,"pairs_per_case":12,"case_l":21.0,"case_w":14.0,"case_h":7.0,"case_wt_lbs":13.0},{"sku":"JD6625-XL","name":"HIGH-PRO\u2122 Ice Cleat - X-Large","unit_l":6.25,"unit_w":6.875,"unit_h":3.5,"unit_wt_oz":22.4,"pairs_per_case":12,"case_l":23.0,"case_w":15.0,"case_h":8.0,"case_wt_lbs":15.0},{"sku":"JD6625-XXL","name":"HIGH-PRO\u2122 Ice Cleat - XX-Large","unit_l":6.25,"unit_w":6.875,"unit_h":3.5,"unit_wt_oz":25.6,"pairs_per_case":12,"case_l":23.0,"case_w":15.0,"case_h":8.0,"case_wt_lbs":17.0},{"sku":"JD7725-S","name":"ICE BEAST\u2122 - Small","unit_l":6.5,"unit_w":6.25,"unit_h":3.25,"unit_wt_oz":13.9,"pairs_per_case":12,"case_l":21.0,"case_w":15.0,"case_h":8.0,"case_wt_lbs":14.0},{"sku":"JD7725-M","name":"ICE BEAST\u2122 - Medium","unit_l":6.5,"unit_w":6.25,"unit_h":3.25,"unit_wt_oz":17.6,"pairs_per_case":12,"case_l":21.0,"case_w":15.0,"case_h":8.0,"case_wt_lbs":14.2},{"sku":"JD7725-L","name":"ICE BEAST\u2122 - Large","unit_l":6.5,"unit_w":6.25,"unit_h":3.25,"unit_wt_oz":17.6,"pairs_per_case":12,"case_l":21.0,"case_w":15.0,"case_h":8.0,"case_wt_lbs":14.2},{"sku":"JD7725-XL","name":"ICE BEAST\u2122 - X-Large","unit_l":7.5,"unit_w":6.5,"unit_h":3.5,"unit_wt_oz":19.2,"pairs_per_case":12,"case_l":23.0,"case_w":16.0,"case_h":8.0,"case_wt_lbs":15.3},{"sku":"JD7725-XXL","name":"ICE BEAST\u2122 - XX-Large","unit_l":7.5,"unit_w":6.5,"unit_h":3.5,"unit_wt_oz":19.2,"pairs_per_case":12,"case_l":23.0,"case_w":16.0,"case_h":8.0,"case_wt_lbs":15.5},{"sku":"JD7710-S","name":"ICE BEAST\u2122 LOW-PRO - Small","unit_l":6.5,"unit_w":6.25,"unit_h":3.25,"unit_wt_oz":13.9,"pairs_per_case":12,"case_l":21.0,"case_w":15.0,"case_h":8.0,"case_wt_lbs":14.0},{"sku":"JD7710-M","name":"ICE BEAST\u2122 LOW-PRO - Medium","unit_l":6.5,"unit_w":6.25,"unit_h":3.25,"unit_wt_oz":17.6,"pairs_per_case":12,"case_l":21.0,"case_w":15.0,"case_h":8.0,"case_wt_lbs":14.2},{"sku":"JD7710-L","name":"ICE BEAST\u2122 LOW-PRO - Large","unit_l":6.5,"unit_w":6.25,"unit_h":3.25,"unit_wt_oz":17.6,"pairs_per_case":12,"case_l":21.0,"case_w":15.0,"case_h":8.0,"case_wt_lbs":14.2},{"sku":"JD7710-XL","name":"ICE BEAST\u2122 LOW-PRO - X-Large","unit_l":7.5,"unit_w":6.5,"unit_h":3.5,"unit_wt_oz":19.2,"pairs_per_case":12,"case_l":23.0,"case_w":16.0,"case_h":8.0,"case_wt_lbs":15.3},{"sku":"JD7710-XXL","name":"ICE BEAST\u2122 LOW-PRO - XX-Large","unit_l":7.5,"unit_w":6.5,"unit_h":3.5,"unit_wt_oz":19.2,"pairs_per_case":12,"case_l":23.0,"case_w":16.0,"case_h":8.0,"case_wt_lbs":15.5}],"zip3_stats_small":{"750":{"rate":2.6367,"low":0.7,"high":1.45,"n":3},"131":{"rate":2.283,"low":0.75,"high":1.4,"n":5},"263":{"rate":3.1441,"low":0.7,"high":1.45,"n":3},"600":{"rate":3.2329,"low":0.75,"high":1.4,"n":8},"212":{"rate":4.4598,"low":0.7,"high":1.45,"n":3},"610":{"rate":3.9614,"low":0.7,"high":1.45,"n":3},"080":{"rate":1.5556,"low":0.75,"high":1.4,"n":5},"852":{"rate":3.8333,"low":0.65,"high":1.55,"n":2},"205":{"rate":6.685,"low":0.65,"high":1.55,"n":1},"871":{"rate":5.163,"low":0.75,"high":1.4,"n":6},"251":{"rate":3.9523,"low":0.65,"high":1.55,"n":2},"601":{"rate":4.565,"low":0.75,"high":1.4,"n":6},"067":{"rate":4.9097,"low":0.65,"high":1.55,"n":2},"028":{"rate":3.662,"low":0.72,"high":1.397,"n":21},"024":{"rate":2.684,"low":0.7,"high":1.45,"n":3},"032":{"rate":3.274,"low":0.82,"high":1.45,"n":13},"021":{"rate":2.8956,"low":0.75,"high":1.4,"n":7},"527":{"rate":5.3106,"low":0.65,"high":1.55,"n":1},"545":{"rate":5.4087,"low":0.65,"high":1.55,"n":1},"060":{"rate":2.308,"low":0.978,"high":1.45,"n":13},"973":{"rate":3.0133,"low":0.65,"high":1.55,"n":2},"507":{"rate":3.2033,"low":0.65,"high":1.55,"n":1},"540":{"rate":3.7303,"low":0.65,"high":1.55,"n":1},"806":{"rate":4.6119,"low":0.7,"high":1.45,"n":4},"850":{"rate":6.0944,"low":0.75,"high":1.4,"n":6},"680":{"rate":4.6873,"low":0.65,"high":1.55,"n":2},"201":{"rate":2.9311,"low":0.75,"high":1.4,"n":9},"841":{"rate":3.8529,"low":0.7,"high":1.45,"n":3},"018":{"rate":1.965,"low":0.75,"high":1.4,"n":6},"063":{"rate":2.3469,"low":0.7,"high":1.45,"n":3},"921":{"rate":8.79,"low":0.65,"high":1.55,"n":1},"531":{"rate":3.835,"low":0.72,"high":1.45,"n":11},"802":{"rate":5.625,"low":0.7,"high":1.45,"n":3},"381":{"rate":4.8714,"low":0.75,"high":1.4,"n":5},"481":{"rate":3.3501,"low":0.75,"high":1.4,"n":9},"647":{"rate":5.2656,"low":0.75,"high":1.4,"n":5},"062":{"rate":3.3165,"low":0.65,"high":1.55,"n":1},"497":{"rate":4.1837,"low":0.65,"high":1.55,"n":2},"592":{"rate":7.8091,"low":0.65,"high":1.55,"n":1},"465":{"rate":3.3806,"low":0.65,"high":1.55,"n":1},"035":{"rate":5.0566,"low":0.72,"high":1.204,"n":10},"027":{"rate":3.5135,"low":0.75,"high":1.4,"n":7},"020":{"rate":4.6143,"low":0.7,"high":1.45,"n":3},"631":{"rate":4.1576,"low":0.72,"high":1.45,"n":10},"305":{"rate":4.505,"low":0.75,"high":1.4,"n":7},"031":{"rate":5.55,"low":0.72,"high":1.45,"n":12},"377":{"rate":3.705,"low":0.75,"high":1.4,"n":5},"673":{"rate":4.7415,"low":0.7,"high":1.45,"n":3},"543":{"rate":6.2844,"low":0.75,"high":1.4,"n":6},"037":{"rate":3.8046,"low":0.72,"high":1.24,"n":14},"440":{"rate":4.7325,"low":0.72,"high":1.45,"n":10},"943":{"rate":4.9705,"low":0.65,"high":1.55,"n":1},"015":{"rate":4.1188,"low":0.7,"high":1.45,"n":4},"486":{"rate":3.8667,"low":0.75,"high":1.4,"n":5},"535":{"rate":4.5382,"low":0.72,"high":1.45,"n":15},"995":{"rate":4.5617,"low":0.7,"high":1.45,"n":3},"836":{"rate":3.8041,"low":0.65,"high":1.55,"n":2},"608":{"rate":5.2356,"low":0.65,"high":1.55,"n":1},"577":{"rate":7.6667,"low":0.75,"high":1.4,"n":5},"599":{"rate":8.236,"low":0.7,"high":1.45,"n":4},"178":{"rate":3.1625,"low":0.75,"high":1.4,"n":5},"840":{"rate":5.387,"low":0.72,"high":1.45,"n":32},"652":{"rate":2.3226,"low":0.7,"high":1.45,"n":3},"515":{"rate":3.9525,"low":0.7,"high":1.45,"n":4},"570":{"rate":5.1452,"low":0.75,"high":1.4,"n":7},"530":{"rate":3.6467,"low":0.72,"high":1.45,"n":13},"558":{"rate":9.61,"low":0.7,"high":1.45,"n":3},"446":{"rate":3.25,"low":0.7,"high":1.45,"n":4},"870":{"rate":3.7098,"low":0.65,"high":1.55,"n":1},"524":{"rate":1.9642,"low":0.75,"high":1.4,"n":8},"187":{"rate":1.325,"low":0.65,"high":1.55,"n":2},"180":{"rate":3.8619,"low":0.72,"high":1.45,"n":27},"083":{"rate":4.5765,"low":0.7,"high":1.45,"n":3},"826":{"rate":6.6675,"low":0.7,"high":1.45,"n":4},"571":{"rate":3.5109,"low":0.75,"high":1.4,"n":8},"372":{"rate":2.7011,"low":0.7,"high":1.45,"n":4},"705":{"rate":5.9525,"low":0.75,"high":1.4,"n":5},"605":{"rate":2.9846,"low":0.831,"high":1.45,"n":10},"520":{"rate":3.6437,"low":0.65,"high":1.55,"n":1},"081":{"rate":2.169,"low":0.7,"high":1.45,"n":4},"496":{"rate":3.1792,"low":0.75,"high":1.4,"n":6},"152":{"rate":3.1021,"low":0.7,"high":1.45,"n":4},"196":{"rate":2.3574,"low":0.75,"high":1.4,"n":7},"495":{"rate":3.015,"low":0.7,"high":1.45,"n":4},"170":{"rate":3.9743,"low":0.7,"high":1.45,"n":4},"805":{"rate":5.9278,"low":0.75,"high":1.4,"n":5},"800":{"rate":6.1806,"low":0.72,"high":1.093,"n":11},"989":{"rate":3.367,"low":0.65,"high":1.55,"n":1},"061":{"rate":7.3174,"low":0.7,"high":1.45,"n":3},"503":{"rate":2.0977,"low":0.7,"high":1.45,"n":4},"386":{"rate":3.6,"low":0.65,"high":1.55,"n":2},"833":{"rate":9.1273,"low":0.7,"high":1.45,"n":4},"159":{"rate":5.8286,"low":0.75,"high":1.4,"n":5},"189":{"rate":1.7644,"low":0.7,"high":1.45,"n":3},"163":{"rate":1.9265,"low":0.65,"high":1.55,"n":1},"043":{"rate":1.9841,"low":0.65,"high":1.55,"n":2},"895":{"rate":5.0578,"low":0.65,"high":1.55,"n":2},"479":{"rate":3.8254,"low":0.75,"high":1.4,"n":5},"010":{"rate":3.1233,"low":0.75,"high":1.4,"n":5},"038":{"rate":2.9024,"low":0.72,"high":1.45,"n":13},"033":{"rate":3.96,"low":0.75,"high":1.4,"n":7},"582":{"rate":4.675,"low":0.65,"high":1.55,"n":1},"572":{"rate":4.5857,"low":0.7,"high":1.45,"n":4},"183":{"rate":4.945,"low":0.65,"high":1.55,"n":2},"575":{"rate":3.5404,"low":0.75,"high":1.4,"n":5},"681":{"rate":2.7673,"low":0.7,"high":1.45,"n":3},"559":{"rate":2.5567,"low":0.7,"high":1.45,"n":3},"820":{"rate":3.9381,"low":0.7,"high":1.45,"n":3},"617":{"rate":3.2224,"low":0.7,"high":1.45,"n":3},"128":{"rate":4.4288,"low":0.72,"high":1.45,"n":12},"654":{"rate":11.0409,"low":0.65,"high":1.55,"n":1},"480":{"rate":3.1987,"low":0.75,"high":1.4,"n":7},"484":{"rate":4.1486,"low":0.7,"high":1.45,"n":3},"816":{"rate":5.1671,"low":0.72,"high":1.296,"n":14},"658":{"rate":4.3,"low":0.72,"high":1.45,"n":12},"996":{"rate":3.6683,"low":0.65,"high":1.55,"n":1},"591":{"rate":4.7174,"low":0.7,"high":1.45,"n":4},"557":{"rate":5.3207,"low":0.7,"high":1.45,"n":3},"604":{"rate":4.7352,"low":0.72,"high":1.45,"n":15},"191":{"rate":1.9718,"low":0.7,"high":1.45,"n":4},"462":{"rate":3.0167,"low":0.75,"high":1.4,"n":6},"640":{"rate":4.1189,"low":0.75,"high":1.052,"n":10},"193":{"rate":2.4244,"low":0.7,"high":1.45,"n":3},"982":{"rate":5.8364,"low":0.75,"high":1.4,"n":6},"664":{"rate":3.0558,"low":0.65,"high":1.55,"n":1},"801":{"rate":4.4216,"low":0.65,"high":1.55,"n":1},"554":{"rate":3.225,"low":0.72,"high":1.45,"n":11},"639":{"rate":3.13,"low":0.65,"high":1.55,"n":1},"272":{"rate":2.4095,"low":0.7,"high":1.45,"n":4},"586":{"rate":3.3568,"low":0.65,"high":1.55,"n":1},"618":{"rate":2.898,"low":0.812,"high":1.45,"n":10},"553":{"rate":2.6594,"low":0.75,"high":1.4,"n":6},"952":{"rate":7.0374,"low":0.7,"high":1.45,"n":4},"125":{"rate":2.157,"low":0.7,"high":1.45,"n":3},"490":{"rate":3.6409,"low":0.72,"high":1.45,"n":14},"162":{"rate":3.4943,"low":0.65,"high":1.55,"n":1},"466":{"rate":2.6,"low":0.65,"high":1.55,"n":2},"990":{"rate":7.33,"low":0.65,"high":1.55,"n":1},"161":{"rate":4.4153,"low":0.7,"high":1.45,"n":4},"011":{"rate":6.44,"low":0.65,"high":1.55,"n":1},"588":{"rate":4.8474,"low":0.65,"high":1.55,"n":2},"030":{"rate":3.0575,"low":0.726,"high":1.323,"n":14},"636":{"rate":4.657,"low":0.65,"high":1.55,"n":1},"118":{"rate":3.4352,"low":0.65,"high":1.55,"n":1},"040":{"rate":6.3706,"low":0.75,"high":1.4,"n":5},"165":{"rate":2.6654,"low":0.75,"high":1.4,"n":6},"150":{"rate":4.125,"low":0.75,"high":1.4,"n":7},"506":{"rate":2.5074,"low":0.7,"high":1.45,"n":4},"402":{"rate":5.368,"low":0.72,"high":1.387,"n":13},"615":{"rate":4.6091,"low":0.65,"high":1.55,"n":1},"432":{"rate":2.2544,"low":0.7,"high":1.45,"n":4},"452":{"rate":4.055,"low":0.75,"high":1.4,"n":6},"796":{"rate":5.4417,"low":0.65,"high":1.55,"n":1},"502":{"rate":5.2173,"low":0.75,"high":1.4,"n":5},"186":{"rate":2.3778,"low":0.65,"high":1.55,"n":2},"405":{"rate":5.7274,"low":0.72,"high":1.45,"n":17},"441":{"rate":4.2196,"low":0.75,"high":1.4,"n":9},"628":{"rate":3.7398,"low":0.65,"high":1.55,"n":1},"088":{"rate":8.1111,"low":0.65,"high":1.55,"n":1},"489":{"rate":6.225,"low":0.7,"high":1.45,"n":4},"972":{"rate":4.3352,"low":0.65,"high":1.55,"n":1},"727":{"rate":3.05,"low":0.7,"high":1.45,"n":3},"657":{"rate":3.9482,"low":0.7,"high":1.45,"n":4},"613":{"rate":6.2875,"low":0.7,"high":1.45,"n":4},"129":{"rate":4.8071,"low":0.75,"high":1.4,"n":5},"469":{"rate":3.3653,"low":0.65,"high":1.55,"n":2},"077":{"rate":6.15,"low":0.65,"high":1.55,"n":1},"136":{"rate":3.1644,"low":0.75,"high":1.4,"n":6},"573":{"rate":3.3363,"low":0.75,"high":1.4,"n":6},"463":{"rate":5.95,"low":0.7,"high":1.45,"n":3},"598":{"rate":5.3162,"low":0.65,"high":1.55,"n":1},"526":{"rate":4.225,"low":0.65,"high":1.55,"n":1},"068":{"rate":2.0104,"low":0.7,"high":1.45,"n":3},"023":{"rate":2.4675,"low":0.7,"high":1.45,"n":3},"054":{"rate":3.8687,"low":0.75,"high":1.4,"n":5},"809":{"rate":4.4114,"low":0.7,"high":1.45,"n":4},"970":{"rate":3.2348,"low":0.7,"high":1.45,"n":3},"975":{"rate":5.9867,"low":0.7,"high":1.45,"n":3},"282":{"rate":2.5268,"low":0.7,"high":1.45,"n":3},"648":{"rate":5.2942,"low":0.7,"high":1.45,"n":3},"138":{"rate":4.5286,"low":0.75,"high":1.4,"n":5},"220":{"rate":5.9962,"low":0.65,"high":1.55,"n":1},"544":{"rate":5.8067,"low":0.82,"high":1.45,"n":11},"483":{"rate":5.6152,"low":0.75,"high":1.4,"n":7},"541":{"rate":4.3904,"low":0.65,"high":1.55,"n":2},"149":{"rate":4.2625,"low":0.65,"high":1.55,"n":2},"829":{"rate":7.5661,"low":0.65,"high":1.55,"n":2},"775":{"rate":3.9632,"low":0.7,"high":1.45,"n":3},"875":{"rate":4.7706,"low":0.65,"high":1.55,"n":1},"500":{"rate":4.0243,"low":0.75,"high":1.4,"n":5},"065":{"rate":2.0424,"low":0.65,"high":1.55,"n":2},"390":{"rate":9.1857,"low":0.65,"high":1.55,"n":1},"897":{"rate":3.9822,"low":0.65,"high":1.55,"n":1},"439":{"rate":2.864,"low":0.7,"high":1.45,"n":3},"190":{"rate":5.3,"low":0.65,"high":1.55,"n":2},"286":{"rate":3.7985,"low":0.75,"high":1.4,"n":5},"325":{"rate":2.5681,"low":0.65,"high":1.55,"n":1},"374":{"rate":5.9147,"low":0.7,"high":1.45,"n":3},"177":{"rate":3.4796,"low":0.65,"high":1.55,"n":2},"456":{"rate":3.3574,"low":0.65,"high":1.55,"n":2},"770":{"rate":3.0516,"low":0.75,"high":1.4,"n":5},"785":{"rate":4.9227,"low":0.65,"high":1.55,"n":1},"563":{"rate":5.589,"low":0.7,"high":1.45,"n":3},"537":{"rate":2.575,"low":0.75,"high":1.4,"n":9},"380":{"rate":3.0075,"low":0.65,"high":1.55,"n":2},"378":{"rate":4.2154,"low":0.7,"high":1.45,"n":3},"144":{"rate":2.3682,"low":0.65,"high":1.55,"n":1},"262":{"rate":5.1489,"low":0.65,"high":1.55,"n":1},"983":{"rate":8.4576,"low":0.65,"high":1.55,"n":1},"244":{"rate":5.2957,"low":0.65,"high":1.55,"n":1},"902":{"rate":4.2353,"low":0.65,"high":1.55,"n":1},"449":{"rate":8.0818,"low":0.65,"high":1.55,"n":1},"236":{"rate":3.29,"low":0.65,"high":1.55,"n":1},"379":{"rate":3.3645,"low":0.75,"high":1.4,"n":5},"276":{"rate":1.6688,"low":0.65,"high":1.55,"n":2},"240":{"rate":6.0029,"low":0.75,"high":1.4,"n":5},"296":{"rate":10.3107,"low":0.65,"high":1.55,"n":2},"298":{"rate":4.6596,"low":0.65,"high":1.55,"n":2},"859":{"rate":6.805,"low":0.65,"high":1.55,"n":1},"596":{"rate":4.2236,"low":0.75,"high":1.4,"n":7},"890":{"rate":5.1757,"low":0.65,"high":1.55,"n":1},"124":{"rate":2.4368,"low":0.7,"high":1.45,"n":3},"988":{"rate":10.5171,"low":0.65,"high":1.55,"n":2},"376":{"rate":4.6725,"low":0.65,"high":1.55,"n":1},"584":{"rate":4.909,"low":0.65,"high":1.55,"n":1},"427":{"rate":4.404,"low":0.75,"high":1.4,"n":6},"957":{"rate":3.476,"low":0.65,"high":1.55,"n":1},"997":{"rate":2.2449,"low":0.7,"high":1.45,"n":4},"433":{"rate":7.9412,"low":0.75,"high":1.4,"n":6},"232":{"rate":2.7,"low":0.7,"high":1.45,"n":4},"992":{"rate":4.9875,"low":0.65,"high":1.55,"n":2},"242":{"rate":4.6018,"low":0.7,"high":1.45,"n":3},"794":{"rate":8.0889,"low":0.65,"high":1.55,"n":1},"258":{"rate":3.1667,"low":0.65,"high":1.55,"n":1},"522":{"rate":5.9529,"low":0.7,"high":1.45,"n":3},"894":{"rate":2.3183,"low":0.65,"high":1.55,"n":2},"504":{"rate":3.2667,"low":0.65,"high":1.55,"n":1},"197":{"rate":2.1713,"low":0.75,"high":1.4,"n":5},"662":{"rate":4.9286,"low":0.7,"high":1.45,"n":3},"580":{"rate":2.7672,"low":0.7,"high":1.45,"n":4},"460":{"rate":3.4425,"low":0.75,"high":1.4,"n":6},"645":{"rate":8.5542,"low":0.65,"high":1.55,"n":1},"685":{"rate":2.387,"low":0.65,"high":1.55,"n":2},"265":{"rate":3.3419,"low":0.65,"high":1.55,"n":2},"146":{"rate":4.5286,"low":0.7,"high":1.45,"n":3},"293":{"rate":3.1862,"low":0.65,"high":1.55,"n":2},"523":{"rate":3.086,"low":0.65,"high":1.55,"n":2},"834":{"rate":5.8921,"low":0.65,"high":1.55,"n":2},"249":{"rate":5.9528,"low":0.65,"high":1.55,"n":1},"239":{"rate":4.205,"low":0.65,"high":1.55,"n":1},"688":{"rate":4.3371,"low":0.7,"high":1.45,"n":3},"436":{"rate":3.3967,"low":0.75,"high":1.4,"n":5},"117":{"rate":5.03,"low":0.65,"high":1.55,"n":2},"245":{"rate":4.78,"low":0.75,"high":1.4,"n":5},"215":{"rate":6.5423,"low":0.65,"high":1.55,"n":2},"917":{"rate":7.1554,"low":0.65,"high":1.55,"n":2},"644":{"rate":6.1545,"low":0.65,"high":1.55,"n":2},"611":{"rate":3.4029,"low":0.7,"high":1.45,"n":4},"198":{"rate":11.4538,"low":0.65,"high":1.55,"n":1},"420":{"rate":3.4328,"low":0.72,"high":1.45,"n":122},"089":{"rate":1.9631,"low":0.65,"high":1.55,"n":1},"139":{"rate":2.185,"low":0.65,"high":1.55,"n":1},"986":{"rate":5.4773,"low":0.7,"high":1.45,"n":3},"597":{"rate":4.8209,"low":0.75,"high":1.4,"n":6},"837":{"rate":5.1181,"low":0.65,"high":1.55,"n":2},"622":{"rate":4.4204,"low":0.72,"high":1.45,"n":17},"044":{"rate":4.4279,"low":0.75,"high":1.4,"n":8},"549":{"rate":3.4238,"low":0.75,"high":1.4,"n":5},"013":{"rate":1.5984,"low":0.65,"high":1.55,"n":1},"041":{"rate":2.4619,"low":0.75,"high":1.4,"n":9},"494":{"rate":2.4,"low":0.65,"high":1.55,"n":2},"683":{"rate":10.8348,"low":0.65,"high":1.55,"n":1},"550":{"rate":3.2313,"low":0.7,"high":1.45,"n":3},"974":{"rate":5.3044,"low":0.7,"high":1.45,"n":3},"513":{"rate":4.0739,"low":0.7,"high":1.45,"n":3},"793":{"rate":6.2614,"low":0.65,"high":1.55,"n":1},"112":{"rate":1.714,"low":0.65,"high":1.55,"n":2},"057":{"rate":6.7061,"low":0.7,"high":1.45,"n":4},"026":{"rate":2.3843,"low":0.7,"high":1.45,"n":3},"646":{"rate":7.535,"low":0.75,"high":1.4,"n":5},"284":{"rate":3.6667,"low":0.65,"high":1.55,"n":1},"991":{"rate":5.6963,"low":0.65,"high":1.55,"n":2},"860":{"rate":8.988,"low":0.65,"high":1.55,"n":1},"847":{"rate":3.4136,"low":0.65,"high":1.55,"n":1},"960":{"rate":8.027,"low":0.65,"high":1.55,"n":1},"958":{"rate":5.0255,"low":0.65,"high":1.55,"n":1},"993":{"rate":5.5963,"low":0.65,"high":1.55,"n":2},"980":{"rate":4.928,"low":0.7,"high":1.45,"n":3},"950":{"rate":3.4806,"low":0.65,"high":1.55,"n":2},"853":{"rate":5.2444,"low":0.7,"high":1.45,"n":3},"843":{"rate":6.2734,"low":0.65,"high":1.55,"n":1},"827":{"rate":6.7753,"low":0.65,"high":1.55,"n":1},"825":{"rate":8.05,"low":0.65,"high":1.55,"n":1},"814":{"rate":6.2091,"low":0.65,"high":1.55,"n":1},"812":{"rate":6.4172,"low":0.65,"high":1.55,"n":1},"810":{"rate":6.7232,"low":0.65,"high":1.55,"n":1},"804":{"rate":1.9983,"low":0.65,"high":1.55,"n":1},"782":{"rate":4.8366,"low":0.72,"high":1.45,"n":17},"761":{"rate":2.5484,"low":0.65,"high":1.55,"n":1},"759":{"rate":9.3591,"low":0.65,"high":1.55,"n":1},"757":{"rate":3.4234,"low":0.65,"high":1.55,"n":2},"756":{"rate":3.6066,"low":0.65,"high":1.55,"n":1},"752":{"rate":9.613,"low":0.65,"high":1.55,"n":1},"748":{"rate":3.7462,"low":0.65,"high":1.55,"n":1},"729":{"rate":3.1148,"low":0.65,"high":1.55,"n":1},"722":{"rate":4.5981,"low":0.7,"high":1.45,"n":4},"721":{"rate":4.1273,"low":0.65,"high":1.55,"n":2},"687":{"rate":5.54,"low":0.65,"high":1.55,"n":1},"686":{"rate":10.075,"low":0.7,"high":1.45,"n":3},"676":{"rate":2.664,"low":0.65,"high":1.55,"n":1},"674":{"rate":2.751,"low":0.65,"high":1.55,"n":2},"672":{"rate":3.944,"low":0.75,"high":1.4,"n":6},"667":{"rate":2.9424,"low":0.65,"high":1.55,"n":1},"666":{"rate":3.3693,"low":0.65,"high":1.55,"n":1},"660":{"rate":3.4826,"low":0.7,"high":1.45,"n":3},"656":{"rate":6.8091,"low":0.65,"high":1.55,"n":1},"651":{"rate":8.5222,"low":0.65,"high":1.55,"n":2},"641":{"rate":2.984,"low":0.75,"high":1.4,"n":5},"637":{"rate":6.0044,"low":0.65,"high":1.55,"n":1},"633":{"rate":3.6532,"low":0.7,"high":1.45,"n":3},"629":{"rate":2.5863,"low":0.65,"high":1.55,"n":2},"625":{"rate":8.2357,"low":0.65,"high":1.55,"n":1},"624":{"rate":4.3,"low":0.65,"high":1.55,"n":1},"609":{"rate":3.0206,"low":0.65,"high":1.55,"n":2},"606":{"rate":3.7658,"low":0.7,"high":1.45,"n":3},"594":{"rate":7.3214,"low":0.65,"high":1.55,"n":1},"585":{"rate":6.2818,"low":0.65,"high":1.55,"n":1},"565":{"rate":5.7453,"low":0.65,"high":1.55,"n":2},"551":{"rate":4.3062,"low":0.75,"high":1.4,"n":5},"547":{"rate":4.7597,"low":0.799,"high":1.45,"n":19},"546":{"rate":4.7937,"low":0.7,"high":1.45,"n":3},"532":{"rate":2.7394,"low":0.65,"high":1.55,"n":1},"528":{"rate":4.5982,"low":0.65,"high":1.55,"n":1},"525":{"rate":7.84,"low":0.65,"high":1.55,"n":1},"511":{"rate":8.0772,"low":0.65,"high":1.55,"n":2},"505":{"rate":5.7117,"low":0.7,"high":1.45,"n":3},"501":{"rate":4.9609,"low":0.65,"high":1.55,"n":2},"498":{"rate":4.5903,"low":0.65,"high":1.55,"n":2},"493":{"rate":2.423,"low":0.7,"high":1.45,"n":4},"485":{"rate":4.3917,"low":0.65,"high":1.55,"n":1},"478":{"rate":3.083,"low":0.65,"high":1.55,"n":2},"471":{"rate":5.5284,"low":0.65,"high":1.55,"n":2},"468":{"rate":2.423,"low":0.75,"high":1.4,"n":6},"467":{"rate":4.305,"low":0.7,"high":1.45,"n":3},"461":{"rate":4.092,"low":0.75,"high":1.4,"n":9},"457":{"rate":11.9682,"low":0.65,"high":1.55,"n":1},"453":{"rate":1.9647,"low":0.7,"high":1.45,"n":3},"450":{"rate":3.4065,"low":0.65,"high":1.55,"n":1},"447":{"rate":3.902,"low":0.65,"high":1.55,"n":1},"444":{"rate":2.3292,"low":0.65,"high":1.55,"n":2},"442":{"rate":1.7642,"low":0.65,"high":1.55,"n":1},"437":{"rate":3.7857,"low":0.7,"high":1.45,"n":4},"435":{"rate":4.4283,"low":0.65,"high":1.55,"n":1},"434":{"rate":3.265,"low":0.65,"high":1.55,"n":1},"431":{"rate":3.4614,"low":0.7,"high":1.45,"n":3},"430":{"rate":4.7225,"low":0.7,"high":1.45,"n":3},"424":{"rate":9.589,"low":0.65,"high":1.55,"n":2},"423":{"rate":6.1211,"low":0.7,"high":1.45,"n":4},"421":{"rate":5.4759,"low":0.7,"high":1.45,"n":3},"410":{"rate":3.913,"low":0.65,"high":1.55,"n":1},"409":{"rate":8.966,"low":0.65,"high":1.55,"n":2},"394":{"rate":11.5529,"low":0.65,"high":1.55,"n":1},"391":{"rate":10.528,"low":0.65,"high":1.55,"n":1},"385":{"rate":5.0574,"low":0.65,"high":1.55,"n":1},"383":{"rate":8.6308,"low":0.65,"high":1.55,"n":1},"371":{"rate":5.3924,"low":0.65,"high":1.55,"n":2},"356":{"rate":2.8291,"low":0.65,"high":1.55,"n":2},"331":{"rate":3.5524,"low":0.65,"high":1.55,"n":1},"328":{"rate":4.9932,"low":0.65,"high":1.55,"n":1},"322":{"rate":5.825,"low":0.7,"high":1.45,"n":4},"306":{"rate":8.9462,"low":0.65,"high":1.55,"n":2},"301":{"rate":3.6,"low":0.75,"high":1.4,"n":6},"300":{"rate":7.069,"low":0.65,"high":1.55,"n":1},"295":{"rate":8.9,"low":0.7,"high":1.45,"n":4},"294":{"rate":4.8,"low":0.7,"high":1.45,"n":3},"288":{"rate":5.144,"low":0.65,"high":1.55,"n":1},"287":{"rate":6.4913,"low":0.7,"high":1.45,"n":3},"281":{"rate":2.288,"low":0.65,"high":1.55,"n":1},"277":{"rate":1.9583,"low":0.65,"high":1.55,"n":1},"275":{"rate":6.0029,"low":0.65,"high":1.55,"n":1},"260":{"rate":2.966,"low":0.7,"high":1.45,"n":4},"256":{"rate":5.2958,"low":0.65,"high":1.55,"n":1},"229":{"rate":4.6081,"low":0.65,"high":1.55,"n":1},"228":{"rate":4.9409,"low":0.65,"high":1.55,"n":1},"225":{"rate":8.0867,"low":0.65,"high":1.55,"n":1},"221":{"rate":2.035,"low":0.65,"high":1.55,"n":2},"216":{"rate":3.4338,"low":0.75,"high":1.4,"n":5},"211":{"rate":1.7667,"low":0.7,"high":1.45,"n":3},"210":{"rate":2.6458,"low":0.65,"high":1.55,"n":2},"207":{"rate":2.1305,"low":0.65,"high":1.55,"n":2},"195":{"rate":4.3333,"low":0.65,"high":1.55,"n":1},"194":{"rate":4.1208,"low":0.7,"high":1.45,"n":4},"184":{"rate":5.025,"low":0.7,"high":1.45,"n":4},"182":{"rate":2.6648,"low":0.65,"high":1.55,"n":1},"181":{"rate":3.2722,"low":0.65,"high":1.55,"n":2},"179":{"rate":3.5663,"low":0.7,"high":1.45,"n":4},"176":{"rate":3.465,"low":0.7,"high":1.45,"n":3},"175":{"rate":2.7113,"low":0.75,"high":1.4,"n":5},"174":{"rate":3.9871,"low":0.65,"high":1.55,"n":2},"173":{"rate":4.4476,"low":0.65,"high":1.55,"n":2},"169":{"rate":5.2045,"low":0.7,"high":1.45,"n":3},"168":{"rate":4.9712,"low":0.7,"high":1.45,"n":4},"160":{"rate":5.0147,"low":0.7,"high":1.45,"n":3},"156":{"rate":4.0417,"low":0.65,"high":1.55,"n":2},"155":{"rate":8.8875,"low":0.7,"high":1.45,"n":3},"153":{"rate":2.4488,"low":0.65,"high":1.55,"n":1},"151":{"rate":4.5379,"low":0.7,"high":1.45,"n":3},"148":{"rate":5.6304,"low":0.65,"high":1.55,"n":1},"142":{"rate":4.1214,"low":0.65,"high":1.55,"n":2},"141":{"rate":2.2818,"low":0.65,"high":1.55,"n":1},"140":{"rate":5.4009,"low":0.65,"high":1.55,"n":2},"132":{"rate":4.47,"low":0.65,"high":1.55,"n":2},"130":{"rate":4.4884,"low":0.65,"high":1.55,"n":2},"122":{"rate":4.3595,"low":0.7,"high":1.45,"n":3},"121":{"rate":6.9962,"low":0.65,"high":1.55,"n":1},"120":{"rate":4.5341,"low":0.7,"high":1.45,"n":3},"115":{"rate":3.831,"low":0.65,"high":1.55,"n":1},"113":{"rate":4.54,"low":0.65,"high":1.55,"n":2},"105":{"rate":5.1832,"low":0.7,"high":1.45,"n":4},"086":{"rate":4.0761,"low":0.65,"high":1.55,"n":1},"082":{"rate":4.718,"low":0.65,"high":1.55,"n":2},"078":{"rate":2.5133,"low":0.65,"high":1.55,"n":1},"071":{"rate":2.0083,"low":0.75,"high":1.4,"n":5},"070":{"rate":8.08,"low":0.75,"high":1.4,"n":7},"066":{"rate":4.285,"low":0.65,"high":1.55,"n":1},"064":{"rate":2.312,"low":0.75,"high":1.4,"n":5},"058":{"rate":3.8667,"low":0.65,"high":1.55,"n":1},"056":{"rate":2.3769,"low":0.65,"high":1.55,"n":2},"053":{"rate":11.7333,"low":0.65,"high":1.55,"n":1},"049":{"rate":6.73,"low":0.65,"high":1.55,"n":1},"042":{"rate":7.0667,"low":0.65,"high":1.55,"n":1},"029":{"rate":2.9248,"low":0.65,"high":1.55,"n":2},"025":{"rate":4.3968,"low":0.65,"high":1.55,"n":2},"017":{"rate":2.6227,"low":0.65,"high":1.55,"n":2},"016":{"rate":2.251,"low":0.65,"high":1.55,"n":1},"351":{"rate":7.752,"low":0.65,"high":1.55,"n":1},"370":{"rate":5.815,"low":0.7,"high":1.45,"n":3},"451":{"rate":6.2677,"low":0.65,"high":1.55,"n":2},"134":{"rate":4.175,"low":0.65,"high":1.55,"n":2},"539":{"rate":7.1725,"low":0.65,"high":1.55,"n":1},"779":{"rate":4.359,"low":0.65,"high":1.55,"n":1},"473":{"rate":4.6596,"low":0.65,"high":1.55,"n":1},"838":{"rate":6.506,"low":0.65,"high":1.55,"n":1},"616":{"rate":6.8412,"low":0.65,"high":1.55,"n":1},"299":{"rate":10.7643,"low":0.65,"high":1.55,"n":1},"291":{"rate":7.9889,"low":0.65,"high":1.55,"n":1},"472":{"rate":3.531,"low":0.7,"high":1.45,"n":3},"167":{"rate":4.1611,"low":0.65,"high":1.55,"n":1},"164":{"rate":5.8848,"low":0.65,"high":1.55,"n":1},"620":{"rate":2.9138,"low":0.65,"high":1.55,"n":1},"392":{"rate":4.7469,"low":0.65,"high":1.55,"n":1},"226":{"rate":4.0491,"low":0.65,"high":1.55,"n":2},"587":{"rate":5.848,"low":0.65,"high":1.55,"n":1},"560":{"rate":4.7939,"low":0.65,"high":1.55,"n":1},"723":{"rate":6.0778,"low":0.65,"high":1.55,"n":1},"634":{"rate":7.1905,"low":0.65,"high":1.55,"n":1},"206":{"rate":2.8592,"low":0.7,"high":1.45,"n":3},"354":{"rate":4.5733,"low":0.65,"high":1.55,"n":1},"492":{"rate":4.2687,"low":0.65,"high":1.55,"n":1},"661":{"rate":3.7738,"low":0.65,"high":1.55,"n":1},"627":{"rate":6.8529,"low":0.65,"high":1.55,"n":1},"034":{"rate":2.2328,"low":0.65,"high":1.55,"n":1},"234":{"rate":4.8966,"low":0.65,"high":1.55,"n":1},"411":{"rate":7.5179,"low":0.65,"high":1.55,"n":1},"172":{"rate":3.0886,"low":0.65,"high":1.55,"n":1},"250":{"rate":2.9009,"low":0.65,"high":1.55,"n":1},"267":{"rate":6.2,"low":0.65,"high":1.55,"n":1},"482":{"rate":10.375,"low":0.65,"high":1.55,"n":1},"815":{"rate":7.8801,"low":0.65,"high":1.55,"n":2},"445":{"rate":2.9197,"low":0.65,"high":1.55,"n":1},"323":{"rate":2.744,"low":0.65,"high":1.55,"n":1},"243":{"rate":3.8132,"low":0.65,"high":1.55,"n":1},"406":{"rate":2.3083,"low":0.65,"high":1.55,"n":1},"257":{"rate":1.8542,"low":0.65,"high":1.55,"n":1},"765":{"rate":5.9209,"low":0.65,"high":1.55,"n":1},"241":{"rate":2.5365,"low":0.65,"high":1.55,"n":1},"413":{"rate":4.9267,"low":0.65,"high":1.55,"n":1},"218":{"rate":2.2949,"low":0.65,"high":1.55,"n":1},"069":{"rate":7.1958,"low":0.65,"high":1.55,"n":1},"443":{"rate":4.83,"low":0.65,"high":1.55,"n":1},"626":{"rate":4.2908,"low":0.65,"high":1.55,"n":2},"760":{"rate":7.97,"low":0.65,"high":1.55,"n":1},"403":{"rate":5.1857,"low":0.65,"high":1.55,"n":1},"741":{"rate":3.1073,"low":0.65,"high":1.55,"n":1},"274":{"rate":3.0231,"low":0.65,"high":1.55,"n":1},"104":{"rate":2.6037,"low":0.65,"high":1.55,"n":1},"361":{"rate":8.0033,"low":0.65,"high":1.55,"n":1},"477":{"rate":3.0556,"low":0.65,"high":1.55,"n":1},"614":{"rate":4.5933,"low":0.65,"high":1.55,"n":1},"767":{"rate":3.3156,"low":0.65,"high":1.55,"n":1},"475":{"rate":4.4635,"low":0.65,"high":1.55,"n":1},"769":{"rate":6.4032,"low":0.65,"high":1.55,"n":1},"454":{"rate":3.783,"low":0.65,"high":1.55,"n":2},"691":{"rate":11.5593,"low":0.65,"high":1.55,"n":1},"425":{"rate":3.3596,"low":0.65,"high":1.55,"n":1},"712":{"rate":5.4869,"low":0.65,"high":1.55,"n":1},"932":{"rate":6.3113,"low":0.65,"high":1.55,"n":1},"700":{"rate":5.545,"low":0.65,"high":1.55,"n":1}},"zip3_stats_medium":{"207":{"rate":1.537,"low":0.7,"high":1.45,"n":3},"641":{"rate":3.9545,"low":0.7,"high":1.45,"n":4},"505":{"rate":2.1031,"low":0.65,"high":1.55,"n":2},"169":{"rate":1.0816,"low":0.65,"high":1.55,"n":1},"032":{"rate":2.4338,"low":0.75,"high":1.4,"n":6},"802":{"rate":3.5905,"low":0.75,"high":1.4,"n":6},"562":{"rate":4.2873,"low":0.65,"high":1.55,"n":2},"894":{"rate":2.6654,"low":0.65,"high":1.55,"n":2},"044":{"rate":2.0608,"low":0.75,"high":1.4,"n":5},"611":{"rate":1.812,"low":0.75,"high":1.4,"n":5},"033":{"rate":1.9613,"low":0.7,"high":1.45,"n":4},"680":{"rate":3.3511,"low":0.7,"high":1.45,"n":3},"996":{"rate":1.1742,"low":0.75,"high":1.4,"n":5},"189":{"rate":0.9255,"low":0.65,"high":1.55,"n":1},"020":{"rate":2.2313,"low":0.7,"high":1.45,"n":4},"076":{"rate":10.508,"low":0.7,"high":1.45,"n":3},"040":{"rate":2.1202,"low":0.7,"high":1.45,"n":3},"604":{"rate":2.5095,"low":0.855,"high":1.059,"n":11},"805":{"rate":4.2619,"low":0.75,"high":1.4,"n":5},"483":{"rate":2.2984,"low":0.75,"high":1.4,"n":9},"840":{"rate":3.584,"low":0.75,"high":1.4,"n":8},"582":{"rate":5.8984,"low":0.7,"high":1.45,"n":4},"400":{"rate":0.9732,"low":0.65,"high":1.55,"n":2},"532":{"rate":2.2825,"low":0.7,"high":1.45,"n":4},"543":{"rate":2.2198,"low":0.65,"high":1.55,"n":2},"970":{"rate":5.1466,"low":0.65,"high":1.55,"n":1},"147":{"rate":4.4068,"low":0.65,"high":1.55,"n":1},"133":{"rate":2.634,"low":0.65,"high":1.55,"n":2},"130":{"rate":1.5837,"low":0.7,"high":1.45,"n":3},"134":{"rate":6.4081,"low":0.7,"high":1.45,"n":3},"503":{"rate":2.282,"low":0.7,"high":1.45,"n":4},"816":{"rate":3.5165,"low":0.65,"high":1.55,"n":2},"305":{"rate":3.0667,"low":0.75,"high":1.4,"n":5},"030":{"rate":2.4253,"low":0.75,"high":1.4,"n":5},"373":{"rate":2.3757,"low":0.65,"high":1.55,"n":2},"440":{"rate":2.0104,"low":0.7,"high":1.45,"n":3},"217":{"rate":2.0663,"low":0.65,"high":1.55,"n":1},"601":{"rate":2.6611,"low":0.75,"high":1.4,"n":7},"731":{"rate":2.0663,"low":0.7,"high":1.45,"n":3},"953":{"rate":3.5538,"low":0.65,"high":1.55,"n":2},"530":{"rate":2.5703,"low":0.75,"high":1.4,"n":8},"486":{"rate":1.8031,"low":0.65,"high":1.55,"n":2},"057":{"rate":2.2797,"low":0.65,"high":1.55,"n":2},"691":{"rate":2.7755,"low":0.65,"high":1.55,"n":2},"531":{"rate":3.9284,"low":0.7,"high":1.45,"n":4},"038":{"rate":1.4222,"low":0.7,"high":1.45,"n":3},"616":{"rate":2.6583,"low":0.65,"high":1.55,"n":1},"674":{"rate":2.7715,"low":0.65,"high":1.55,"n":1},"212":{"rate":1.6593,"low":0.75,"high":1.4,"n":8},"535":{"rate":2.22,"low":0.75,"high":1.4,"n":7},"028":{"rate":1.9824,"low":0.765,"high":1.33,"n":18},"158":{"rate":1.9345,"low":0.65,"high":1.55,"n":1},"492":{"rate":2.0142,"low":0.65,"high":1.55,"n":1},"174":{"rate":1.7632,"low":0.7,"high":1.45,"n":3},"600":{"rate":2.1599,"low":0.75,"high":1.4,"n":8},"064":{"rate":1.3078,"low":0.7,"high":1.45,"n":4},"628":{"rate":3.4454,"low":0.65,"high":1.55,"n":1},"017":{"rate":1.7776,"low":0.7,"high":1.45,"n":4},"652":{"rate":2.3624,"low":0.65,"high":1.55,"n":2},"061":{"rate":2.3094,"low":0.75,"high":1.4,"n":7},"549":{"rate":1.8454,"low":0.65,"high":1.55,"n":1},"546":{"rate":2.74,"low":0.7,"high":1.45,"n":3},"466":{"rate":2.068,"low":0.7,"high":1.45,"n":3},"016":{"rate":3.0833,"low":0.65,"high":1.55,"n":1},"023":{"rate":1.7691,"low":0.65,"high":1.55,"n":2},"195":{"rate":2.4586,"low":0.65,"high":1.55,"n":1},"462":{"rate":2.423,"low":0.75,"high":1.4,"n":9},"800":{"rate":3.3958,"low":0.75,"high":1.4,"n":6},"972":{"rate":3.6513,"low":0.65,"high":1.55,"n":2},"989":{"rate":2.9008,"low":0.7,"high":1.45,"n":3},"060":{"rate":1.7932,"low":0.75,"high":1.4,"n":6},"974":{"rate":3.3571,"low":0.75,"high":1.4,"n":5},"501":{"rate":2.3255,"low":0.65,"high":1.55,"n":1},"494":{"rate":2.1481,"low":0.65,"high":1.55,"n":2},"122":{"rate":2.3094,"low":0.65,"high":1.55,"n":1},"993":{"rate":3.8559,"low":0.7,"high":1.45,"n":4},"041":{"rate":2.509,"low":0.7,"high":1.45,"n":3},"613":{"rate":2.4407,"low":0.65,"high":1.55,"n":2},"591":{"rate":3.2573,"low":0.75,"high":1.4,"n":6},"980":{"rate":2.498,"low":0.7,"high":1.45,"n":4},"551":{"rate":2.6137,"low":0.65,"high":1.55,"n":2},"990":{"rate":4.173,"low":0.65,"high":1.55,"n":1},"657":{"rate":1.8888,"low":0.65,"high":1.55,"n":2},"991":{"rate":2.1289,"low":0.65,"high":1.55,"n":2},"588":{"rate":4.7625,"low":0.75,"high":1.4,"n":5},"144":{"rate":1.6163,"low":0.65,"high":1.55,"n":1},"658":{"rate":2.0508,"low":0.75,"high":1.4,"n":5},"129":{"rate":1.9027,"low":0.65,"high":1.55,"n":1},"594":{"rate":3.1186,"low":0.65,"high":1.55,"n":1},"497":{"rate":2.7087,"low":0.65,"high":1.55,"n":1},"018":{"rate":2.1895,"low":0.75,"high":1.4,"n":6},"647":{"rate":2.827,"low":0.65,"high":1.55,"n":1},"750":{"rate":2.5027,"low":0.7,"high":1.45,"n":3},"975":{"rate":3.5978,"low":0.65,"high":1.55,"n":1},"112":{"rate":2.29,"low":0.7,"high":1.45,"n":3},"175":{"rate":2.3162,"low":0.65,"high":1.55,"n":1},"681":{"rate":5.8825,"low":0.65,"high":1.55,"n":2},"043":{"rate":1.5808,"low":0.65,"high":1.55,"n":2},"666":{"rate":3.9495,"low":0.65,"high":1.55,"n":2},"859":{"rate":3.1648,"low":0.65,"high":1.55,"n":1},"544":{"rate":3.3598,"low":0.7,"high":1.45,"n":3},"496":{"rate":2.1717,"low":0.7,"high":1.45,"n":4},"480":{"rate":2.068,"low":0.75,"high":1.4,"n":5},"610":{"rate":3.0091,"low":0.7,"high":1.45,"n":4},"377":{"rate":0.9617,"low":0.65,"high":1.55,"n":2},"554":{"rate":2.1606,"low":0.7,"high":1.45,"n":3},"572":{"rate":3.7849,"low":0.65,"high":1.55,"n":2},"550":{"rate":2.1864,"low":0.7,"high":1.45,"n":4},"118":{"rate":2.182,"low":0.65,"high":1.55,"n":2},"070":{"rate":1.855,"low":0.65,"high":1.55,"n":1},"011":{"rate":1.9233,"low":0.65,"high":1.55,"n":2},"454":{"rate":1.9223,"low":0.7,"high":1.45,"n":4},"103":{"rate":1.2209,"low":0.65,"high":1.55,"n":2},"640":{"rate":2.6133,"low":0.75,"high":1.4,"n":7},"188":{"rate":2.342,"low":0.65,"high":1.55,"n":1},"194":{"rate":1.5198,"low":0.65,"high":1.55,"n":1},"571":{"rate":2.3695,"low":0.65,"high":1.55,"n":2},"804":{"rate":4.4314,"low":0.65,"high":1.55,"n":1},"187":{"rate":1.7495,"low":0.7,"high":1.45,"n":4},"487":{"rate":1.2479,"low":0.65,"high":1.55,"n":2},"176":{"rate":1.3046,"low":0.65,"high":1.55,"n":1},"491":{"rate":2.125,"low":0.65,"high":1.55,"n":1},"260":{"rate":2.7362,"low":0.65,"high":1.55,"n":1},"573":{"rate":3.0175,"low":0.7,"high":1.45,"n":3},"633":{"rate":2.4514,"low":0.65,"high":1.55,"n":1},"575":{"rate":5.3146,"low":0.65,"high":1.55,"n":2},"672":{"rate":2.5333,"low":0.7,"high":1.45,"n":4},"196":{"rate":2.5238,"low":0.75,"high":1.4,"n":6},"105":{"rate":2.1742,"low":0.7,"high":1.45,"n":4},"751":{"rate":2.9352,"low":0.7,"high":1.45,"n":3},"605":{"rate":3.4879,"low":0.65,"high":1.55,"n":2},"037":{"rate":2.3655,"low":0.7,"high":1.45,"n":4},"982":{"rate":3.9893,"low":0.65,"high":1.55,"n":1},"402":{"rate":2.4853,"low":0.75,"high":1.4,"n":8},"049":{"rate":2.8043,"low":0.65,"high":1.55,"n":1},"261":{"rate":2.504,"low":0.65,"high":1.55,"n":2},"618":{"rate":2.5623,"low":0.75,"high":1.4,"n":5},"489":{"rate":1.3566,"low":0.65,"high":1.55,"n":1},"775":{"rate":3.4551,"low":0.65,"high":1.55,"n":1},"827":{"rate":4.202,"low":0.65,"high":1.55,"n":2},"434":{"rate":1.505,"low":0.65,"high":1.55,"n":2},"446":{"rate":2.2852,"low":0.75,"high":1.4,"n":6},"456":{"rate":2.5024,"low":0.65,"high":1.55,"n":1},"291":{"rate":1.7996,"low":0.65,"high":1.55,"n":1},"606":{"rate":2.0575,"low":0.7,"high":1.45,"n":4},"201":{"rate":1.9804,"low":0.75,"high":1.4,"n":9},"379":{"rate":2.3453,"low":0.65,"high":1.55,"n":2},"224":{"rate":1.69,"low":0.7,"high":1.45,"n":3},"458":{"rate":2.7867,"low":0.65,"high":1.55,"n":1},"433":{"rate":2.3039,"low":0.65,"high":1.55,"n":2},"481":{"rate":2.0799,"low":0.855,"high":1.261,"n":10},"264":{"rate":3.0304,"low":0.65,"high":1.55,"n":1},"460":{"rate":2.5325,"low":0.7,"high":1.45,"n":4},"523":{"rate":3.1763,"low":0.65,"high":1.55,"n":1},"071":{"rate":1.5313,"low":0.771,"high":1.183,"n":11},"500":{"rate":3.1655,"low":0.75,"high":1.4,"n":7},"420":{"rate":2.1623,"low":0.65,"high":1.55,"n":2},"988":{"rate":4.0729,"low":0.65,"high":1.55,"n":1},"146":{"rate":2.2019,"low":0.75,"high":1.4,"n":7},"461":{"rate":2.8566,"low":0.75,"high":1.4,"n":5},"986":{"rate":3.9122,"low":0.7,"high":1.45,"n":3},"622":{"rate":2.2952,"low":0.7,"high":1.45,"n":4},"837":{"rate":3.776,"low":0.65,"high":1.55,"n":1},"463":{"rate":1.9786,"low":0.7,"high":1.45,"n":3},"035":{"rate":2.5392,"low":0.65,"high":1.55,"n":2},"170":{"rate":1.703,"low":0.75,"high":1.4,"n":6},"474":{"rate":2.3357,"low":0.65,"high":1.55,"n":1},"997":{"rate":11.0407,"low":0.65,"high":1.55,"n":2},"957":{"rate":4.447,"low":0.65,"high":1.55,"n":1},"917":{"rate":4.475,"low":0.65,"high":1.55,"n":1},"836":{"rate":3.4913,"low":0.65,"high":1.55,"n":1},"923":{"rate":4.59,"low":0.65,"high":1.55,"n":2},"874":{"rate":4.0736,"low":0.65,"high":1.55,"n":1},"838":{"rate":4.2397,"low":0.65,"high":1.55,"n":1},"853":{"rate":3.525,"low":0.7,"high":1.45,"n":3},"786":{"rate":2.7237,"low":0.65,"high":1.55,"n":1},"782":{"rate":3.5132,"low":0.75,"high":1.4,"n":5},"781":{"rate":3.2647,"low":0.65,"high":1.55,"n":1},"752":{"rate":3.1137,"low":0.65,"high":1.55,"n":1},"741":{"rate":3.0079,"low":0.65,"high":1.55,"n":1},"740":{"rate":2.9712,"low":0.65,"high":1.55,"n":1},"718":{"rate":3.4867,"low":0.65,"high":1.55,"n":1},"687":{"rate":2.7874,"low":0.65,"high":1.55,"n":1},"673":{"rate":2.869,"low":0.65,"high":1.55,"n":1},"664":{"rate":2.7273,"low":0.65,"high":1.55,"n":1},"662":{"rate":1.9221,"low":0.65,"high":1.55,"n":1},"653":{"rate":2.739,"low":0.65,"high":1.55,"n":2},"646":{"rate":2.4825,"low":0.65,"high":1.55,"n":1},"636":{"rate":3.3852,"low":0.65,"high":1.55,"n":1},"631":{"rate":3.3728,"low":0.7,"high":1.45,"n":4},"620":{"rate":2.1067,"low":0.7,"high":1.45,"n":3},"619":{"rate":3.5227,"low":0.65,"high":1.55,"n":1},"615":{"rate":1.8094,"low":0.7,"high":1.45,"n":4},"599":{"rate":3.4831,"low":0.65,"high":1.55,"n":1},"597":{"rate":4.7365,"low":0.7,"high":1.45,"n":3},"592":{"rate":3.5425,"low":0.65,"high":1.55,"n":2},"563":{"rate":2.1082,"low":0.65,"high":1.55,"n":1},"559":{"rate":2.2706,"low":0.65,"high":1.55,"n":2},"553":{"rate":3.1906,"low":0.65,"high":1.55,"n":1},"541":{"rate":1.7058,"low":0.65,"high":1.55,"n":2},"537":{"rate":2.1958,"low":0.65,"high":1.55,"n":1},"528":{"rate":2.1725,"low":0.65,"high":1.55,"n":2},"524":{"rate":2.1352,"low":0.7,"high":1.45,"n":3},"507":{"rate":1.9212,"low":0.65,"high":1.55,"n":1},"495":{"rate":1.4196,"low":0.65,"high":1.55,"n":1},"493":{"rate":1.4777,"low":0.65,"high":1.55,"n":1},"490":{"rate":1.6573,"low":0.7,"high":1.45,"n":3},"485":{"rate":2.274,"low":0.65,"high":1.55,"n":1},"484":{"rate":3.1634,"low":0.65,"high":1.55,"n":1},"482":{"rate":2.2601,"low":0.65,"high":1.55,"n":2},"478":{"rate":3.4944,"low":0.65,"high":1.55,"n":1},"476":{"rate":2.2302,"low":0.65,"high":1.55,"n":1},"471":{"rate":1.4068,"low":0.65,"high":1.55,"n":2},"468":{"rate":1.7264,"low":0.65,"high":1.55,"n":1},"467":{"rate":1.6678,"low":0.65,"high":1.55,"n":1},"453":{"rate":2.3554,"low":0.7,"high":1.45,"n":3},"452":{"rate":2.183,"low":0.75,"high":1.4,"n":6},"441":{"rate":1.8865,"low":0.7,"high":1.45,"n":3},"439":{"rate":2.2899,"low":0.65,"high":1.55,"n":2},"436":{"rate":2.189,"low":0.65,"high":1.55,"n":2},"432":{"rate":2.5619,"low":0.65,"high":1.55,"n":1},"421":{"rate":2.5502,"low":0.65,"high":1.55,"n":2},"405":{"rate":3.7742,"low":0.65,"high":1.55,"n":1},"403":{"rate":5.9781,"low":0.65,"high":1.55,"n":1},"401":{"rate":5.0841,"low":0.65,"high":1.55,"n":1},"391":{"rate":2.2392,"low":0.65,"high":1.55,"n":1},"381":{"rate":5.7171,"low":0.65,"high":1.55,"n":2},"371":{"rate":2.2866,"low":0.65,"high":1.55,"n":2},"313":{"rate":2.4232,"low":0.65,"high":1.55,"n":1},"280":{"rate":1.6724,"low":0.65,"high":1.55,"n":1},"265":{"rate":2.1465,"low":0.65,"high":1.55,"n":2},"240":{"rate":2.0677,"low":0.7,"high":1.45,"n":4},"236":{"rate":2.3091,"low":0.65,"high":1.55,"n":2},"233":{"rate":2.5645,"low":0.65,"high":1.55,"n":1},"230":{"rate":1.6337,"low":0.65,"high":1.55,"n":1},"229":{"rate":2.5539,"low":0.65,"high":1.55,"n":2},"221":{"rate":1.6734,"low":0.65,"high":1.55,"n":2},"197":{"rate":1.6332,"low":0.65,"high":1.55,"n":1},"191":{"rate":1.5003,"low":0.65,"high":1.55,"n":1},"190":{"rate":1.3573,"low":0.65,"high":1.55,"n":1},"184":{"rate":3.5965,"low":0.65,"high":1.55,"n":1},"183":{"rate":1.9433,"low":0.7,"high":1.45,"n":3},"181":{"rate":1.875,"low":0.7,"high":1.45,"n":3},"180":{"rate":2.046,"low":0.7,"high":1.45,"n":3},"177":{"rate":1.4664,"low":0.65,"high":1.55,"n":1},"168":{"rate":2.2839,"low":0.7,"high":1.45,"n":4},"163":{"rate":1.9604,"low":0.7,"high":1.45,"n":3},"152":{"rate":1.5567,"low":0.7,"high":1.45,"n":4},"156":{"rate":2.3259,"low":0.65,"high":1.55,"n":2},"153":{"rate":1.8172,"low":0.65,"high":1.55,"n":1},"151":{"rate":2.0325,"low":0.75,"high":1.4,"n":5},"150":{"rate":2.02,"low":0.65,"high":1.55,"n":1},"142":{"rate":2.2688,"low":0.7,"high":1.45,"n":3},"140":{"rate":3.5806,"low":0.65,"high":1.55,"n":2},"139":{"rate":1.0721,"low":0.65,"high":1.55,"n":1},"136":{"rate":5.4741,"low":0.65,"high":1.55,"n":1},"131":{"rate":1.3349,"low":0.65,"high":1.55,"n":1},"127":{"rate":3.7656,"low":0.65,"high":1.55,"n":1},"124":{"rate":1.6801,"low":0.65,"high":1.55,"n":2},"123":{"rate":1.9366,"low":0.65,"high":1.55,"n":1},"121":{"rate":3.3487,"low":0.65,"high":1.55,"n":1},"120":{"rate":4.5928,"low":0.65,"high":1.55,"n":1},"117":{"rate":2.4019,"low":0.65,"high":1.55,"n":2},"088":{"rate":1.9159,"low":0.7,"high":1.45,"n":3},"085":{"rate":3.3699,"low":0.65,"high":1.55,"n":1},"079":{"rate":2.2964,"low":0.65,"high":1.55,"n":1},"077":{"rate":3.1311,"low":0.65,"high":1.55,"n":1},"068":{"rate":2.3515,"low":0.7,"high":1.45,"n":3},"056":{"rate":2.0265,"low":0.65,"high":1.55,"n":1},"031":{"rate":1.4539,"low":0.7,"high":1.45,"n":3},"029":{"rate":2.174,"low":0.75,"high":1.4,"n":5},"024":{"rate":4.4783,"low":0.65,"high":1.55,"n":1},"021":{"rate":2.1225,"low":0.7,"high":1.45,"n":3},"167":{"rate":4.6857,"low":0.65,"high":1.55,"n":1},"560":{"rate":3.6967,"low":0.65,"high":1.55,"n":1},"128":{"rate":2.572,"low":0.65,"high":1.55,"n":2},"812":{"rate":4.106,"low":0.65,"high":1.55,"n":1},"607":{"rate":2.1069,"low":0.65,"high":1.55,"n":1},"770":{"rate":3.2238,"low":0.65,"high":1.55,"n":1},"661":{"rate":2.1712,"low":0.65,"high":1.55,"n":1},"282":{"rate":2.0533,"low":0.7,"high":1.45,"n":4},"539":{"rate":3.8283,"low":0.65,"high":1.55,"n":1},"580":{"rate":2.4691,"low":0.65,"high":1.55,"n":2},"111":{"rate":1.9554,"low":0.65,"high":1.55,"n":1},"019":{"rate":2.7829,"low":0.65,"high":1.55,"n":1},"272":{"rate":2.4272,"low":0.65,"high":1.55,"n":2},"283":{"rate":3.2038,"low":0.65,"high":1.55,"n":1},"165":{"rate":2.2229,"low":0.65,"high":1.55,"n":2},"275":{"rate":2.3779,"low":0.65,"high":1.55,"n":1},"479":{"rate":2.92,"low":0.65,"high":1.55,"n":1},"895":{"rate":4.0533,"low":0.65,"high":1.55,"n":1},"796":{"rate":3.3558,"low":0.65,"high":1.55,"n":1},"352":{"rate":3.0589,"low":0.65,"high":1.55,"n":1},"841":{"rate":2.8067,"low":0.65,"high":1.55,"n":1},"722":{"rate":3.1815,"low":0.65,"high":1.55,"n":2},"198":{"rate":1.5169,"low":0.7,"high":1.45,"n":3},"034":{"rate":1.7732,"low":0.65,"high":1.55,"n":1},"143":{"rate":2.3354,"low":0.65,"high":1.55,"n":1},"801":{"rate":2.8071,"low":0.65,"high":1.55,"n":1},"231":{"rate":2.3977,"low":0.65,"high":1.55,"n":2},"410":{"rate":2.0695,"low":0.65,"high":1.55,"n":2},"296":{"rate":1.6204,"low":0.65,"high":1.55,"n":1},"249":{"rate":4.9524,"low":0.65,"high":1.55,"n":1},"104":{"rate":1.6931,"low":0.65,"high":1.55,"n":1},"506":{"rate":2.0531,"low":0.65,"high":1.55,"n":1},"427":{"rate":3.5326,"low":0.65,"high":1.55,"n":1},"762":{"rate":2.4979,"low":0.65,"high":1.55,"n":1},"995":{"rate":2.4962,"low":0.65,"high":1.55,"n":1},"502":{"rate":1.9295,"low":0.65,"high":1.55,"n":1},"232":{"rate":1.4771,"low":0.65,"high":1.55,"n":1},"284":{"rate":2.4197,"low":0.65,"high":1.55,"n":1},"447":{"rate":2.2939,"low":0.65,"high":1.55,"n":1},"411":{"rate":2.033,"low":0.65,"high":1.55,"n":1},"711":{"rate":2.6276,"low":0.65,"high":1.55,"n":1},"289":{"rate":1.9086,"low":0.65,"high":1.55,"n":1},"225":{"rate":1.5075,"low":0.65,"high":1.55,"n":1},"765":{"rate":3.2817,"low":0.65,"high":1.55,"n":1},"125":{"rate":3.7168,"low":0.65,"high":1.55,"n":1},"457":{"rate":3.2828,"low":0.65,"high":1.55,"n":1},"370":{"rate":3.8326,"low":0.65,"high":1.55,"n":1},"939":{"rate":5.5506,"low":0.65,"high":1.55,"n":1},"435":{"rate":2.5747,"low":0.65,"high":1.55,"n":1},"921":{"rate":3.784,"low":0.65,"high":1.55,"n":1},"301":{"rate":2.5286,"low":0.65,"high":1.55,"n":2},"431":{"rate":2.6496,"low":0.65,"high":1.55,"n":1},"293":{"rate":2.1735,"low":0.65,"high":1.55,"n":1},"932":{"rate":4.3366,"low":0.65,"high":1.55,"n":1},"344":{"rate":5.07,"low":0.65,"high":1.55,"n":2},"660":{"rate":2.5942,"low":0.65,"high":1.55,"n":1},"386":{"rate":2.4853,"low":0.65,"high":1.55,"n":1},"850":{"rate":3.8559,"low":0.65,"high":1.55,"n":1},"179":{"rate":2.1217,"low":0.65,"high":1.55,"n":1}},"zip3_stats_large":{"972":{"rate":5.3565,"low":0.65,"high":1.55,"n":2},"844":{"rate":2.0268,"low":0.65,"high":1.55,"n":1},"032":{"rate":2.0827,"low":0.75,"high":1.4,"n":7},"995":{"rate":2.265,"low":0.75,"high":1.4,"n":9},"834":{"rate":1.707,"low":0.65,"high":1.55,"n":1},"033":{"rate":1.9039,"low":0.75,"high":1.4,"n":8},"989":{"rate":1.492,"low":0.65,"high":1.55,"n":1},"010":{"rate":0.8552,"low":0.65,"high":1.55,"n":1},"897":{"rate":1.17,"low":0.65,"high":1.55,"n":1},"974":{"rate":1.9831,"low":0.7,"high":1.45,"n":3},"802":{"rate":2.3788,"low":0.72,"high":1.45,"n":11},"044":{"rate":2.2683,"low":0.75,"high":1.4,"n":7},"040":{"rate":0.8902,"low":0.65,"high":1.55,"n":1},"895":{"rate":2.5423,"low":0.7,"high":1.45,"n":3},"496":{"rate":1.1186,"low":0.65,"high":1.55,"n":1},"681":{"rate":2.7186,"low":0.75,"high":1.4,"n":5},"551":{"rate":1.9408,"low":0.75,"high":1.4,"n":8},"427":{"rate":1.3807,"low":0.75,"high":1.4,"n":9},"985":{"rate":1.6804,"low":0.65,"high":1.55,"n":1},"063":{"rate":1.0504,"low":0.65,"high":1.55,"n":1},"049":{"rate":1.6267,"low":0.7,"high":1.45,"n":3},"064":{"rate":0.94,"low":0.65,"high":1.55,"n":1},"837":{"rate":1.6804,"low":0.65,"high":1.55,"n":1},"530":{"rate":2.1969,"low":0.65,"high":1.55,"n":1},"970":{"rate":1.764,"low":0.65,"high":1.55,"n":2},"554":{"rate":2.1601,"low":0.75,"high":1.4,"n":5},"038":{"rate":3.0226,"low":0.75,"high":1.4,"n":5},"076":{"rate":2.4294,"low":0.7,"high":1.45,"n":4},"804":{"rate":5.5513,"low":0.65,"high":1.55,"n":1},"567":{"rate":5.1962,"low":0.7,"high":1.45,"n":4},"582":{"rate":5.3385,"low":0.65,"high":1.55,"n":2},"565":{"rate":4.5209,"low":0.65,"high":1.55,"n":2},"580":{"rate":5.3065,"low":0.65,"high":1.55,"n":2},"591":{"rate":3.4511,"low":0.65,"high":1.55,"n":2},"807":{"rate":4.8946,"low":0.65,"high":1.55,"n":1},"693":{"rate":5.0948,"low":0.65,"high":1.55,"n":1},"481":{"rate":2.7225,"low":0.7,"high":1.45,"n":4},"641":{"rate":2.4081,"low":0.72,"high":1.353,"n":11},"544":{"rate":2.744,"low":0.7,"high":1.45,"n":3},"840":{"rate":3.313,"low":0.889,"high":1.285,"n":10},"402":{"rate":2.9157,"low":0.7,"high":1.45,"n":3},"220":{"rate":2.0599,"low":0.65,"high":1.55,"n":1},"605":{"rate":2.2503,"low":0.72,"high":1.157,"n":16},"134":{"rate":1.5482,"low":0.65,"high":1.55,"n":2},"305":{"rate":1.1672,"low":0.79,"high":1.45,"n":14},"136":{"rate":2.423,"low":0.65,"high":1.55,"n":2},"535":{"rate":2.4659,"low":0.75,"high":1.4,"n":7},"833":{"rate":4.288,"low":0.7,"high":1.45,"n":3},"020":{"rate":1.9259,"low":0.65,"high":1.55,"n":2},"734":{"rate":4.0873,"low":0.65,"high":1.55,"n":1},"731":{"rate":2.9839,"low":0.65,"high":1.55,"n":1},"303":{"rate":0.9853,"low":0.65,"high":1.55,"n":1},"601":{"rate":2.1088,"low":0.72,"high":1.258,"n":20},"424":{"rate":3.2057,"low":0.65,"high":1.55,"n":1},"485":{"rate":2.0191,"low":0.75,"high":1.4,"n":5},"180":{"rate":2.0076,"low":0.75,"high":1.4,"n":5},"537":{"rate":2.1218,"low":0.7,"high":1.45,"n":4},"688":{"rate":2.757,"low":0.65,"high":1.55,"n":1},"981":{"rate":2.8858,"low":0.65,"high":1.55,"n":1},"028":{"rate":3.662,"low":0.65,"high":1.55,"n":2},"609":{"rate":2.1099,"low":0.65,"high":1.55,"n":1},"620":{"rate":2.4913,"low":0.7,"high":1.45,"n":4},"450":{"rate":1.4474,"low":0.65,"high":1.55,"n":2},"060":{"rate":1.3505,"low":0.772,"high":1.424,"n":14},"015":{"rate":2.2074,"low":0.7,"high":1.45,"n":4},"196":{"rate":2.0125,"low":0.866,"high":1.088,"n":10},"617":{"rate":2.254,"low":0.75,"high":1.4,"n":6},"614":{"rate":2.0452,"low":0.65,"high":1.55,"n":2},"600":{"rate":1.9748,"low":0.75,"high":1.4,"n":6},"489":{"rate":1.5222,"low":0.7,"high":1.45,"n":4},"727":{"rate":3.151,"low":0.65,"high":1.55,"n":1},"751":{"rate":2.4413,"low":0.65,"high":1.55,"n":2},"151":{"rate":1.8924,"low":0.7,"high":1.45,"n":4},"174":{"rate":1.4063,"low":0.65,"high":1.55,"n":1},"070":{"rate":1.3236,"low":0.75,"high":1.4,"n":8},"206":{"rate":1.6567,"low":0.65,"high":1.55,"n":1},"462":{"rate":1.9067,"low":0.72,"high":1.175,"n":15},"071":{"rate":1.3469,"low":0.925,"high":1.222,"n":25},"062":{"rate":1.9178,"low":0.65,"high":1.55,"n":1},"191":{"rate":1.5779,"low":0.75,"high":1.4,"n":5},"653":{"rate":2.0377,"low":0.65,"high":1.55,"n":2},"119":{"rate":2.0516,"low":0.75,"high":1.4,"n":9},"085":{"rate":1.7497,"low":0.65,"high":1.55,"n":2},"030":{"rate":1.9065,"low":0.75,"high":1.4,"n":7},"724":{"rate":2.0371,"low":0.65,"high":1.55,"n":1},"606":{"rate":1.2446,"low":0.75,"high":1.4,"n":9},"186":{"rate":1.3765,"low":0.65,"high":1.55,"n":2},"623":{"rate":2.3831,"low":0.65,"high":1.55,"n":1},"466":{"rate":1.7003,"low":0.65,"high":1.55,"n":2},"657":{"rate":2.6409,"low":0.65,"high":1.55,"n":2},"640":{"rate":2.551,"low":0.7,"high":1.45,"n":4},"358":{"rate":2.0713,"low":0.65,"high":1.55,"n":1},"515":{"rate":1.3329,"low":0.65,"high":1.55,"n":2},"611":{"rate":2.0934,"low":0.65,"high":1.55,"n":1},"577":{"rate":2.9318,"low":0.65,"high":1.55,"n":1},"132":{"rate":1.0209,"low":0.65,"high":1.55,"n":2},"068":{"rate":1.6009,"low":0.75,"high":1.4,"n":5},"573":{"rate":2.8047,"low":0.65,"high":1.55,"n":1},"941":{"rate":3.0569,"low":0.65,"high":1.55,"n":1},"575":{"rate":3.0229,"low":0.65,"high":1.55,"n":2},"975":{"rate":3.4142,"low":0.65,"high":1.55,"n":1},"473":{"rate":2.585,"low":0.65,"high":1.55,"n":1},"588":{"rate":4.6069,"low":0.7,"high":1.45,"n":4},"023":{"rate":1.9103,"low":0.7,"high":1.45,"n":3},"452":{"rate":1.8773,"low":0.72,"high":1.167,"n":11},"142":{"rate":1.6533,"low":0.75,"high":1.4,"n":8},"506":{"rate":1.7571,"low":0.65,"high":1.55,"n":1},"083":{"rate":1.0535,"low":0.65,"high":1.55,"n":1},"482":{"rate":1.946,"low":0.65,"high":1.55,"n":2},"570":{"rate":2.9818,"low":0.65,"high":1.55,"n":1},"618":{"rate":2.2825,"low":0.7,"high":1.45,"n":3},"441":{"rate":2.0179,"low":0.7,"high":1.45,"n":4},"165":{"rate":1.981,"low":0.75,"high":1.4,"n":6},"832":{"rate":3.6562,"low":0.65,"high":1.55,"n":1},"480":{"rate":1.7041,"low":0.75,"high":1.4,"n":7},"982":{"rate":2.8309,"low":0.7,"high":1.45,"n":3},"977":{"rate":3.2828,"low":0.7,"high":1.45,"n":4},"272":{"rate":1.5144,"low":0.65,"high":1.55,"n":2},"553":{"rate":2.4787,"low":0.75,"high":1.4,"n":7},"181":{"rate":1.8451,"low":0.65,"high":1.55,"n":2},"152":{"rate":1.3185,"low":0.65,"high":1.55,"n":1},"430":{"rate":2.7148,"low":0.65,"high":1.55,"n":1},"275":{"rate":2.4995,"low":0.65,"high":1.55,"n":1},"672":{"rate":2.1625,"low":0.75,"high":1.4,"n":8},"532":{"rate":2.1347,"low":0.75,"high":1.4,"n":9},"205":{"rate":1.4838,"low":0.65,"high":1.55,"n":1},"996":{"rate":2.0253,"low":0.65,"high":1.55,"n":2},"597":{"rate":3.5696,"low":0.75,"high":1.4,"n":7},"190":{"rate":1.6173,"low":0.65,"high":1.55,"n":1},"543":{"rate":2.0578,"low":0.65,"high":1.55,"n":2},"559":{"rate":2.6173,"low":0.65,"high":1.55,"n":2},"973":{"rate":3.7791,"low":0.65,"high":1.55,"n":2},"531":{"rate":2.739,"low":0.779,"high":1.08,"n":10},"997":{"rate":2.3233,"low":0.75,"high":1.4,"n":5},"201":{"rate":1.6926,"low":0.839,"high":1.164,"n":12},"061":{"rate":2.1164,"low":0.75,"high":1.4,"n":7},"124":{"rate":2.2858,"low":0.65,"high":1.55,"n":1},"117":{"rate":1.9014,"low":0.75,"high":1.4,"n":7},"491":{"rate":1.522,"low":0.7,"high":1.45,"n":3},"665":{"rate":2.7382,"low":0.65,"high":1.55,"n":1},"118":{"rate":1.7944,"low":0.75,"high":1.4,"n":5},"031":{"rate":1.6767,"low":0.7,"high":1.45,"n":3},"146":{"rate":1.9721,"low":0.7,"high":1.45,"n":4},"836":{"rate":4.295,"low":0.65,"high":1.55,"n":2},"080":{"rate":1.6701,"low":0.75,"high":1.4,"n":6},"065":{"rate":1.7373,"low":0.7,"high":1.45,"n":4},"652":{"rate":1.1646,"low":0.65,"high":1.55,"n":2},"037":{"rate":1.7187,"low":0.7,"high":1.45,"n":3},"490":{"rate":1.705,"low":0.65,"high":1.55,"n":1},"507":{"rate":1.9642,"low":0.65,"high":1.55,"n":1},"276":{"rate":1.7383,"low":0.65,"high":1.55,"n":1},"562":{"rate":5.1263,"low":0.65,"high":1.55,"n":2},"636":{"rate":2.8448,"low":0.65,"high":1.55,"n":1},"207":{"rate":1.9761,"low":0.65,"high":1.55,"n":2},"558":{"rate":1.8642,"low":0.7,"high":1.45,"n":3},"604":{"rate":2.0589,"low":0.75,"high":1.4,"n":9},"253":{"rate":1.8323,"low":0.65,"high":1.55,"n":2},"437":{"rate":1.7502,"low":0.7,"high":1.45,"n":3},"505":{"rate":3.179,"low":0.65,"high":1.55,"n":2},"500":{"rate":2.8373,"low":0.75,"high":1.4,"n":6},"300":{"rate":2.1754,"low":0.7,"high":1.45,"n":3},"522":{"rate":2.0744,"low":0.65,"high":1.55,"n":1},"550":{"rate":3.0002,"low":0.943,"high":1.061,"n":21},"252":{"rate":2.6289,"low":0.65,"high":1.55,"n":1},"461":{"rate":1.993,"low":0.65,"high":1.55,"n":2},"917":{"rate":3.522,"low":0.65,"high":1.55,"n":1},"440":{"rate":1.3846,"low":0.65,"high":1.55,"n":2},"376":{"rate":1.9233,"low":0.65,"high":1.55,"n":1},"184":{"rate":3.3769,"low":0.65,"high":1.55,"n":2},"476":{"rate":2.317,"low":0.7,"high":1.45,"n":3},"054":{"rate":1.5435,"low":0.7,"high":1.45,"n":4},"860":{"rate":2.4592,"low":0.7,"high":1.45,"n":3},"497":{"rate":1.84,"low":0.65,"high":1.55,"n":2},"988":{"rate":2.9403,"low":0.65,"high":1.55,"n":1},"112":{"rate":1.5951,"low":0.7,"high":1.45,"n":4},"372":{"rate":2.2557,"low":0.65,"high":1.55,"n":1},"463":{"rate":1.1193,"low":0.7,"high":1.45,"n":4},"827":{"rate":3.6237,"low":0.7,"high":1.45,"n":3},"806":{"rate":3.0495,"low":0.65,"high":1.55,"n":1},"800":{"rate":2.7591,"low":0.75,"high":1.4,"n":5},"683":{"rate":3.1355,"low":0.65,"high":1.55,"n":1},"980":{"rate":2.0314,"low":0.72,"high":1.45,"n":16},"541":{"rate":2.1903,"low":0.65,"high":1.55,"n":1},"999":{"rate":2.9998,"low":0.65,"high":1.55,"n":1},"841":{"rate":2.8272,"low":0.65,"high":1.55,"n":1},"871":{"rate":2.7942,"low":0.65,"high":1.55,"n":2},"957":{"rate":6.0752,"low":0.65,"high":1.55,"n":1},"830":{"rate":4.6204,"low":0.65,"high":1.55,"n":1},"809":{"rate":2.9971,"low":0.65,"high":1.55,"n":2},"805":{"rate":3.0987,"low":0.65,"high":1.55,"n":2},"779":{"rate":3.3997,"low":0.65,"high":1.55,"n":1},"761":{"rate":2.4114,"low":0.7,"high":1.45,"n":3},"722":{"rate":4.7082,"low":0.65,"high":1.55,"n":1},"687":{"rate":1.9464,"low":0.65,"high":1.55,"n":1},"662":{"rate":2.7291,"low":0.65,"high":1.55,"n":1},"647":{"rate":3.5109,"low":0.65,"high":1.55,"n":2},"645":{"rate":0.658,"low":0.65,"high":1.55,"n":2},"631":{"rate":1.0022,"low":0.65,"high":1.55,"n":1},"630":{"rate":2.6913,"low":0.65,"high":1.55,"n":2},"627":{"rate":2.1192,"low":0.65,"high":1.55,"n":1},"625":{"rate":2.7979,"low":0.65,"high":1.55,"n":1},"616":{"rate":1.3376,"low":0.65,"high":1.55,"n":1},"613":{"rate":2.281,"low":0.65,"high":1.55,"n":1},"607":{"rate":2.0951,"low":0.65,"high":1.55,"n":2},"560":{"rate":2.2765,"low":0.65,"high":1.55,"n":1},"549":{"rate":2.001,"low":0.65,"high":1.55,"n":2},"547":{"rate":2.1129,"low":0.65,"high":1.55,"n":2},"546":{"rate":2.0274,"low":0.65,"high":1.55,"n":2},"539":{"rate":2.7277,"low":0.65,"high":1.55,"n":1},"527":{"rate":4.344,"low":0.65,"high":1.55,"n":1},"504":{"rate":2.4764,"low":0.65,"high":1.55,"n":1},"498":{"rate":3.08,"low":0.65,"high":1.55,"n":1},"495":{"rate":1.5177,"low":0.7,"high":1.45,"n":3},"493":{"rate":2.3565,"low":0.65,"high":1.55,"n":2},"492":{"rate":2.1561,"low":0.65,"high":1.55,"n":1},"486":{"rate":2.3769,"low":0.65,"high":1.55,"n":1},"483":{"rate":2.0222,"low":0.7,"high":1.45,"n":4},"471":{"rate":2.3116,"low":0.7,"high":1.45,"n":4},"468":{"rate":1.1973,"low":0.65,"high":1.55,"n":1},"454":{"rate":2.1242,"low":0.7,"high":1.45,"n":4},"443":{"rate":1.6934,"low":0.65,"high":1.55,"n":1},"439":{"rate":2.3233,"low":0.65,"high":1.55,"n":2},"434":{"rate":2.5114,"low":0.65,"high":1.55,"n":1},"432":{"rate":1.3807,"low":0.7,"high":1.45,"n":3},"431":{"rate":1.5389,"low":0.65,"high":1.55,"n":1},"420":{"rate":1.8798,"low":0.65,"high":1.55,"n":1},"410":{"rate":2.2137,"low":0.65,"high":1.55,"n":1},"405":{"rate":1.7854,"low":0.65,"high":1.55,"n":1},"373":{"rate":1.0155,"low":0.65,"high":1.55,"n":1},"370":{"rate":1.5625,"low":0.65,"high":1.55,"n":2},"302":{"rate":0.818,"low":0.65,"high":1.55,"n":1},"274":{"rate":1.7036,"low":0.65,"high":1.55,"n":1},"263":{"rate":1.4127,"low":0.65,"high":1.55,"n":1},"261":{"rate":2.6782,"low":0.65,"high":1.55,"n":2},"250":{"rate":2.0763,"low":0.65,"high":1.55,"n":1},"244":{"rate":3.0681,"low":0.65,"high":1.55,"n":1},"240":{"rate":2.1247,"low":0.65,"high":1.55,"n":1},"239":{"rate":1.7814,"low":0.65,"high":1.55,"n":1},"232":{"rate":2.1595,"low":0.7,"high":1.45,"n":4},"224":{"rate":1.2548,"low":0.65,"high":1.55,"n":2},"221":{"rate":1.5715,"low":0.7,"high":1.45,"n":3},"216":{"rate":2.4229,"low":0.7,"high":1.45,"n":4},"212":{"rate":1.5709,"low":0.75,"high":1.4,"n":5},"199":{"rate":2.1627,"low":0.65,"high":1.55,"n":1},"178":{"rate":1.6455,"low":0.65,"high":1.55,"n":1},"175":{"rate":1.6625,"low":0.948,"high":1.106,"n":12},"173":{"rate":2.6575,"low":0.65,"high":1.55,"n":1},"172":{"rate":1.8901,"low":0.65,"high":1.55,"n":1},"170":{"rate":1.6923,"low":0.7,"high":1.45,"n":3},"169":{"rate":2.2027,"low":0.65,"high":1.55,"n":1},"166":{"rate":2.5171,"low":0.65,"high":1.55,"n":2},"153":{"rate":1.9415,"low":0.7,"high":1.45,"n":3},"140":{"rate":1.4694,"low":0.65,"high":1.55,"n":2},"139":{"rate":1.6386,"low":0.65,"high":1.55,"n":1},"130":{"rate":2.0394,"low":0.65,"high":1.55,"n":2},"128":{"rate":2.4251,"low":0.65,"high":1.55,"n":1},"125":{"rate":2.9876,"low":0.65,"high":1.55,"n":1},"123":{"rate":1.3733,"low":0.65,"high":1.55,"n":2},"122":{"rate":2.012,"low":0.65,"high":1.55,"n":1},"120":{"rate":1.4007,"low":0.65,"high":1.55,"n":2},"111":{"rate":2.1919,"low":0.7,"high":1.45,"n":4},"109":{"rate":1.9341,"low":0.7,"high":1.45,"n":4},"107":{"rate":1.8272,"low":0.7,"high":1.45,"n":3},"104":{"rate":1.6565,"low":0.65,"high":1.55,"n":2},"088":{"rate":1.7333,"low":0.75,"high":1.4,"n":5},"086":{"rate":1.1204,"low":0.65,"high":1.55,"n":2},"078":{"rate":1.2988,"low":0.65,"high":1.55,"n":2},"073":{"rate":2.4418,"low":0.65,"high":1.55,"n":1},"066":{"rate":1.8075,"low":0.7,"high":1.45,"n":3},"029":{"rate":10.6153,"low":0.65,"high":1.55,"n":1},"021":{"rate":1.9395,"low":0.7,"high":1.45,"n":3},"018":{"rate":2.3622,"low":0.75,"high":1.4,"n":8},"014":{"rate":1.6872,"low":0.7,"high":1.45,"n":3},"011":{"rate":2.0042,"low":0.7,"high":1.45,"n":4},"523":{"rate":2.5028,"low":0.65,"high":1.55,"n":1},"460":{"rate":2.6276,"low":0.65,"high":1.55,"n":1},"998":{"rate":7.96,"low":0.65,"high":1.55,"n":1},"853":{"rate":3.669,"low":0.65,"high":1.55,"n":1},"479":{"rate":3.0811,"low":0.65,"high":1.55,"n":1},"113":{"rate":1.0987,"low":0.65,"high":1.55,"n":1},"103":{"rate":1.8489,"low":0.65,"high":1.55,"n":1},"524":{"rate":2.2081,"low":0.65,"high":1.55,"n":2},"177":{"rate":0.8879,"low":0.65,"high":1.55,"n":1},"993":{"rate":3.5091,"low":0.65,"high":1.55,"n":1},"074":{"rate":2.099,"low":0.65,"high":1.55,"n":1},"458":{"rate":2.9854,"low":0.65,"high":1.55,"n":1},"183":{"rate":2.712,"low":0.65,"high":1.55,"n":1},"894":{"rate":4.1648,"low":0.65,"high":1.55,"n":1},"637":{"rate":2.7002,"low":0.65,"high":1.55,"n":1},"990":{"rate":3.709,"low":0.65,"high":1.55,"n":1},"168":{"rate":2.6839,"low":0.65,"high":1.55,"n":1},"337":{"rate":2.2481,"low":0.65,"high":1.55,"n":1},"983":{"rate":2.9366,"low":0.65,"high":1.55,"n":1},"322":{"rate":2.2481,"low":0.7,"high":1.45,"n":3},"026":{"rate":2.0477,"low":0.65,"high":1.55,"n":1},"217":{"rate":1.9924,"low":0.65,"high":1.55,"n":1},"179":{"rate":2.3532,"low":0.65,"high":1.55,"n":1},"797":{"rate":3.2356,"low":0.65,"high":1.55,"n":1},"377":{"rate":2.6098,"low":0.65,"high":1.55,"n":1},"723":{"rate":2.6709,"low":0.65,"high":1.55,"n":1},"027":{"rate":1.326,"low":0.65,"high":1.55,"n":1},"270":{"rate":2.2367,"low":0.65,"high":1.55,"n":1},"786":{"rate":3.5647,"low":0.7,"high":1.45,"n":3},"338":{"rate":2.0246,"low":0.65,"high":1.55,"n":1},"282":{"rate":1.8151,"low":0.65,"high":1.55,"n":1},"525":{"rate":2.6509,"low":0.65,"high":1.55,"n":1},"223":{"rate":2.8593,"low":0.65,"high":1.55,"n":1},"105":{"rate":3.8241,"low":0.65,"high":1.55,"n":1}},"zip3_centroids":{"010":[42.2135,-72.5729],"011":[42.1067,-72.5514],"012":[42.4602,-73.2282],"013":[42.5877,-72.4876],"014":[42.58,-71.7827],"015":[42.2165,-71.797],"016":[42.2686,-71.8104],"017":[42.3279,-71.4526],"018":[42.6344,-71.2059],"019":[42.5714,-70.912],"020":[42.1472,-71.1516],"021":[42.3396,-71.0687],"022":[42.3476,-71.0888],"023":[42.0276,-70.9086],"024":[42.3603,-71.2036],"025":[41.6003,-70.5375],"026":[41.7043,-70.2276],"027":[41.7756,-71.1008],"028":[41.7194,-71.4632],"029":[41.8171,-71.4375],"030":[42.8405,-71.4349],"031":[42.9886,-71.4636],"032":[43.4364,-71.595],"033":[43.2399,-71.5658],"034":[42.899,-72.2096],"035":[44.466,-71.4703],"036":[43.1794,-72.3602],"037":[43.6022,-72.1872],"038":[43.1975,-70.987],"039":[43.2053,-70.7423],"040":[43.6805,-70.4624],"041":[43.6677,-70.2806],"042":[44.197,-70.2804],"043":[44.2978,-69.7664],"044":[44.9687,-68.8094],"045":[43.9664,-69.6207],"046":[44.6272,-68.0289],"047":[46.6821,-68.1349],"048":[44.1644,-69.1401],"049":[44.686,-69.5988],"050":[43.8038,-72.4152],"051":[43.2786,-72.5695],"052":[42.9781,-73.1456],"053":[42.9007,-72.6938],"054":[44.541,-73.1206],"056":[44.317,-72.5912],"057":[43.696,-73.053],"058":[44.6697,-72.1274],"059":[44.6785,-71.6664],"060":[41.8038,-72.706],"061":[41.749,-72.691],"062":[41.7964,-72.1281],"063":[41.4561,-72.0588],"064":[41.4235,-72.8456],"065":[41.3224,-72.9276],"066":[41.2079,-73.1882],"067":[41.6118,-73.1134],"068":[41.2195,-73.4399],"069":[41.0747,-73.5453],"070":[40.7551,-74.198],"071":[40.7468,-74.1862],"072":[40.665,-74.2168],"073":[40.7222,-74.0649],"074":[41.0149,-74.2577],"075":[40.9237,-74.1686],"076":[40.9201,-74.0212],"077":[40.3006,-74.1469],"078":[40.9177,-74.7061],"079":[40.7499,-74.4786],"080":[39.8359,-74.945],"081":[39.9355,-75.0821],"082":[39.2998,-74.6449],"083":[39.4657,-75.0378],"084":[39.3681,-74.4652],"085":[40.2516,-74.5949],"086":[40.2198,-74.7178],"087":[40.014,-74.1868],"088":[40.5133,-74.5234],"089":[40.4706,-74.4571],"100":[40.7783,-73.9668],"101":[40.7812,-73.9502],"102":[40.7125,-74.0158],"103":[40.5862,-74.1441],"104":[40.8501,-73.882],"105":[41.142,-73.778],"106":[41.0341,-73.7658],"107":[40.9436,-73.8656],"108":[40.9156,-73.7867],"109":[41.2309,-74.1423],"110":[40.7496,-73.7022],"111":[40.7607,-73.9247],"112":[40.6519,-73.9542],"113":[40.7442,-73.8478],"114":[40.6926,-73.7928],"115":[40.696,-73.6283],"116":[40.5939,-73.7923],"117":[40.7869,-73.2648],"118":[40.7698,-73.4999],"119":[40.8931,-72.6396],"120":[42.8076,-73.9368],"121":[42.7235,-73.7813],"122":[42.6779,-73.8024],"123":[42.8045,-73.9386],"124":[42.0137,-74.1249],"125":[41.6666,-73.9264],"126":[41.6923,-73.8899],"127":[41.6506,-74.6831],"128":[43.2927,-73.6634],"129":[44.6176,-73.8143],"130":[43.0304,-76.2171],"131":[43.1404,-76.3646],"132":[43.0509,-76.1522],"133":[43.1437,-75.1909],"134":[43.1006,-75.339],"135":[43.1093,-75.198],"136":[44.3143,-75.525],"137":[42.1834,-75.8144],"138":[42.299,-75.6345],"139":[42.1386,-75.9065],"140":[42.871,-78.7127],"141":[42.9527,-78.7745],"142":[42.9213,-78.813],"143":[43.1041,-78.9946],"144":[43.0103,-77.5859],"145":[43.0417,-77.447],"146":[43.1729,-77.63],"147":[42.1601,-78.926],"148":[42.307,-76.9722],"149":[42.083,-76.805],"150":[40.512,-80.0672],"151":[40.4366,-79.9719],"152":[40.4423,-79.9725],"153":[40.141,-80.1741],"154":[39.9467,-79.7293],"155":[39.9805,-78.8428],"156":[40.343,-79.5569],"157":[40.6763,-79.0656],"158":[41.2594,-78.7415],"159":[40.3407,-78.8547],"160":[40.8359,-79.9672],"161":[41.1373,-80.3302],"162":[40.9778,-79.4207],"163":[41.5921,-79.7102],"164":[41.9261,-80.0553],"165":[42.1021,-80.0652],"166":[40.5083,-78.3353],"167":[41.8269,-78.5777],"168":[40.8781,-77.9352],"169":[41.8169,-77.2598],"170":[40.312,-76.9072],"171":[40.2967,-76.823],"172":[39.9354,-77.6642],"173":[39.8871,-76.8804],"174":[39.9627,-76.7201],"175":[40.0869,-76.2635],"176":[40.0328,-76.309],"177":[41.2766,-77.0343],"178":[40.9157,-76.7368],"179":[40.6878,-76.2545],"180":[40.6471,-75.4137],"181":[40.6008,-75.4971],"182":[40.9158,-75.8925],"183":[41.0764,-75.1945],"184":[41.4767,-75.4642],"185":[41.4134,-75.663],"186":[41.2818,-75.974],"187":[41.2316,-75.86],"188":[41.8508,-76.1919],"189":[40.308,-75.1432],"190":[40.0313,-75.1856],"191":[40.0036,-75.1408],"193":[39.9509,-75.6995],"194":[40.1811,-75.4174],"195":[40.3818,-75.8554],"196":[40.3391,-75.9377],"197":[39.6254,-75.6781],"198":[39.7592,-75.5755],"199":[38.8614,-75.4333],"200":[38.9095,-77.0133],"201":[38.9166,-77.5121],"206":[38.4851,-76.7652],"207":[38.9243,-76.8611],"208":[39.1057,-77.1763],"209":[39.0464,-77.019],"210":[39.3185,-76.5965],"211":[39.3189,-76.7075],"212":[39.3219,-76.6019],"214":[38.9808,-76.5058],"215":[39.5945,-78.9641],"216":[38.8749,-76.0452],"217":[39.4875,-77.436],"218":[38.3089,-75.5136],"219":[39.61,-75.9389],"220":[38.8125,-77.2601],"221":[38.7541,-77.2757],"222":[38.8757,-77.1001],"223":[38.7891,-77.1009],"224":[38.2524,-77.3622],"225":[38.2518,-77.413],"226":[39.0803,-78.2244],"227":[38.4776,-77.9774],"228":[38.5085,-78.8008],"229":[38.055,-78.5449],"230":[37.6432,-77.3912],"231":[37.4948,-77.3039],"232":[37.5398,-77.4878],"233":[36.8138,-76.2593],"234":[36.845,-76.1824],"235":[36.8946,-76.2616],"236":[37.086,-76.4406],"237":[36.8363,-76.3482],"238":[37.1687,-77.4135],"239":[37.0494,-78.3602],"240":[37.1954,-80.1035],"241":[37.0774,-80.0634],"242":[36.8148,-82.4123],"243":[36.8332,-81.1268],"244":[38.0134,-79.3011],"245":[37.155,-79.2148],"246":[37.175,-81.7357],"247":[37.3681,-81.121],"248":[37.5029,-81.6373],"249":[37.8259,-80.4443],"250":[38.336,-81.5674],"251":[38.33,-81.7157],"252":[38.7063,-81.6299],"253":[38.3624,-81.6458],"254":[39.4198,-77.9745],"255":[38.3581,-82.154],"256":[37.7623,-82.0621],"257":[38.3878,-82.4092],"258":[37.828,-81.2084],"259":[37.8261,-81.0027],"260":[40.1752,-80.6258],"261":[39.271,-81.407],"262":[38.8377,-80.068],"263":[39.2464,-80.3767],"264":[39.2316,-80.3657],"265":[39.5776,-79.9942],"266":[38.4316,-80.8117],"267":[39.3819,-78.917],"268":[38.9673,-79.0367],"270":[36.2091,-80.4346],"271":[36.0849,-80.2651],"272":[35.9718,-79.7893],"273":[35.8573,-79.5857],"274":[36.0752,-79.8188],"275":[35.7884,-78.6407],"276":[35.821,-78.6355],"277":[35.9801,-78.901],"278":[35.8248,-77.5661],"279":[36.1808,-76.2822],"280":[35.3614,-80.9192],"281":[35.285,-80.786],"282":[35.2076,-80.8177],"283":[35.008,-78.992],"284":[34.2514,-78.036],"285":[34.9837,-77.2875],"286":[35.9223,-81.3209],"287":[35.4812,-82.6629],"288":[35.5844,-82.5555],"289":[35.1142,-83.9667],"290":[34.0263,-81.0015],"291":[33.8813,-80.8331],"292":[34.0538,-80.996],"293":[34.9087,-81.9402],"294":[32.9462,-80.046],"295":[33.9542,-79.2821],"296":[34.722,-82.4616],"297":[34.9324,-80.9863],"298":[33.5251,-81.7744],"299":[32.3645,-80.8243],"300":[33.9138,-84.1775],"301":[33.9916,-84.7666],"302":[33.4095,-84.4283],"303":[33.7949,-84.3953],"304":[32.3934,-82.0506],"305":[34.3823,-83.822],"306":[33.9259,-83.3884],"307":[34.7561,-85.0819],"308":[33.4258,-82.2237],"309":[33.442,-82.0342],"310":[32.6416,-83.4856],"312":[32.8466,-83.6757],"313":[32.0024,-81.412],"314":[32.0359,-81.1364],"315":[31.2877,-82.0284],"316":[30.9393,-83.2735],"317":[31.451,-83.914],"318":[32.6042,-84.7859],"319":[32.4904,-84.9316],"320":[30.1363,-81.8877],"321":[29.226,-81.3418],"322":[30.2824,-81.6236],"323":[30.417,-84.2576],"324":[30.4134,-85.6659],"325":[30.5355,-86.9992],"326":[29.6356,-82.4319],"327":[28.7584,-81.3268],"328":[28.5061,-81.346],"329":[28.0533,-80.6427],"330":[25.9295,-80.3209],"331":[25.7684,-80.2934],"333":[26.1388,-80.2367],"334":[26.6118,-80.1633],"335":[28.0178,-82.2976],"336":[28.0153,-82.4716],"337":[27.8552,-82.725],"338":[27.9612,-81.7443],"339":[26.6706,-81.8799],"341":[26.2138,-81.6804],"342":[27.3237,-82.4231],"344":[29.0387,-82.2501],"346":[28.2863,-82.6233],"347":[28.4211,-81.5578],"349":[27.279,-80.3931],"350":[33.5277,-86.7382],"351":[33.5231,-86.6107],"352":[33.4883,-86.778],"354":[33.1841,-87.6115],"355":[33.9666,-87.5985],"356":[34.6877,-87.2927],"357":[34.7496,-86.5433],"358":[34.7211,-86.5899],"359":[34.2188,-85.9977],"360":[32.2768,-86.163],"361":[32.3477,-86.2353],"362":[33.6222,-85.7362],"363":[31.2747,-85.5652],"364":[31.3184,-86.8761],"365":[30.6699,-87.9097],"366":[30.6705,-88.1793],"367":[32.3974,-87.3353],"368":[32.5861,-85.3305],"369":[32.1296,-88.2566],"370":[36.197,-86.8374],"371":[35.9922,-86.5506],"372":[36.1341,-86.79],"373":[35.2739,-85.2726],"378":[36.0078,-83.7666],"379":[35.9596,-83.9955],"380":[35.3847,-89.5982],"374":[35.0504,-85.2462],"376":[36.4006,-82.3756],"377":[36.0455,-83.8608],"381":[35.1173,-89.927],"385":[36.1363,-85.3377],"386":[34.6931,-89.7867],"382":[36.3087,-88.6938],"383":[35.6313,-88.6105],"384":[35.4196,-87.2185],"387":[33.5344,-90.8259],"388":[34.3804,-88.6525],"389":[33.7438,-89.8876],"390":[32.4175,-90.0266],"391":[32.2602,-90.3465],"392":[32.3135,-90.1915],"393":[32.4376,-88.83],"394":[31.2395,-89.3134],"395":[30.4569,-88.9721],"396":[31.3227,-90.4952],"397":[33.5221,-88.692],"398":[31.1431,-84.5974],"400":[38.1319,-85.3793],"401":[37.902,-85.9668],"402":[38.195,-85.682],"403":[38.0391,-84.3377],"404":[37.6134,-84.4321],"405":[38.0183,-84.4744],"406":[38.2329,-84.8833],"407":[36.9682,-84.125],"408":[36.8777,-83.2465],"409":[36.9014,-83.7533],"410":[38.9044,-84.516],"411":[38.4195,-82.8823],"412":[37.8943,-82.7014],"413":[37.5776,-83.476],"414":[37.8392,-83.1694],"415":[37.4662,-82.438],"416":[37.5519,-82.7369],"417":[37.2563,-83.2096],"418":[37.2163,-82.8556],"420":[36.8868,-88.5271],"421":[36.93,-86.2677],"422":[36.8726,-87.2327],"423":[37.6088,-87.0829],"424":[37.5119,-87.6139],"425":[37.1384,-84.6219],"426":[36.8325,-84.8481],"427":[37.4488,-85.7623],"430":[40.1353,-82.9109],"431":[39.7717,-82.9295],"432":[39.9986,-82.9855],"433":[40.5455,-83.3346],"434":[41.4351,-83.3092],"435":[41.5173,-83.9889],"436":[41.6644,-83.5799],"437":[39.8895,-81.786],"438":[40.2527,-81.8788],"439":[40.3104,-80.7749],"440":[41.5163,-81.5873],"441":[41.4483,-81.673],"442":[41.1426,-81.5657],"443":[41.072,-81.5318],"444":[41.1154,-80.7546],"445":[41.0682,-80.6724],"446":[40.7353,-81.5197],"447":[40.8359,-81.3934],"448":[41.0608,-82.7304],"449":[40.749,-82.5371],"450":[39.4101,-84.4398],"451":[39.1623,-84.0231],"452":[39.1742,-84.4904],"453":[39.9094,-84.2238],"454":[39.738,-84.1689],"455":[39.934,-83.8026],"456":[38.9399,-82.8278],"457":[39.3371,-81.8364],"458":[40.8019,-84.1463],"460":[40.0525,-86.0342],"461":[39.6457,-86.2082],"462":[39.7925,-86.1368],"463":[41.505,-87.2296],"464":[41.5476,-87.3341],"465":[41.5485,-86.0152],"466":[41.6749,-86.2815],"467":[41.1933,-85.1949],"468":[41.0954,-85.1351],"469":[40.6552,-86.0467],"470":[39.1668,-85.0343],"471":[38.387,-85.8746],"472":[39.0671,-85.768],"473":[40.0624,-85.2205],"474":[39.0559,-86.5866],"475":[38.4683,-87.0651],"476":[38.0751,-87.4603],"477":[37.9976,-87.556],"478":[39.4511,-87.3269],"479":[40.4258,-86.9631],"480":[42.614,-82.9555],"481":[42.2577,-83.4702],"482":[42.3939,-83.11],"483":[42.6201,-83.2926],"484":[43.0493,-83.5202],"485":[43.0223,-83.6949],"486":[43.7059,-84.2402],"487":[43.7275,-83.662],"488":[42.9217,-84.5748],"489":[42.7186,-84.5732],"490":[42.2283,-85.6017],"491":[41.8765,-86.3386],"492":[42.1018,-84.3245],"493":[43.1178,-85.5614],"494":[43.0843,-86.0907],"495":[42.9386,-85.6508],"496":[44.5567,-85.5806],"497":[45.4142,-84.4714],"498":[46.0958,-87.3419],"499":[46.8055,-88.8486],"500":[41.7733,-93.7035],"501":[41.6944,-93.4105],"502":[41.602,-93.6412],"503":[41.5998,-93.6495],"504":[43.155,-93.3039],"505":[42.6662,-94.3984],"506":[42.627,-92.4344],"507":[42.4648,-92.3147],"508":[41.0077,-94.4961],"510":[42.6583,-95.9863],"511":[42.5106,-96.3801],"512":[43.2305,-96.0824],"513":[43.2913,-95.1021],"514":[42.0955,-95.0839],"515":[41.3044,-95.6907],"516":[40.7473,-95.3101],"520":[42.4768,-90.8448],"521":[43.212,-91.7247],"522":[41.7758,-91.6116],"523":[41.8947,-91.6803],"524":[41.9787,-91.6765],"525":[41.0089,-92.4523],"526":[40.8123,-91.3396],"527":[41.6281,-90.6815],"528":[41.558,-90.6082],"530":[43.3656,-88.1668],"531":[42.7902,-88.1513],"532":[43.0524,-87.9652],"534":[42.7421,-87.8319],"535":[42.9367,-89.3609],"537":[43.0679,-89.3938],"538":[42.8443,-90.6782],"539":[43.5905,-89.4594],"540":[45.0302,-92.561],"541":[44.6601,-88.1931],"542":[44.4042,-87.6234],"543":[44.5201,-88.0198],"544":[44.8,-89.7827],"545":[45.8371,-89.6608],"546":[43.9043,-91.0027],"547":[44.8452,-91.5294],"548":[46.0236,-91.7597],"549":[44.1413,-88.6021],"550":[44.9185,-93.0535],"551":[44.949,-93.0923],"553":[45.026,-93.6118],"554":[44.9984,-93.3058],"556":[47.5045,-91.2256],"557":[47.1765,-92.8003],"558":[46.846,-92.1252],"559":[43.9612,-92.3604],"560":[44.1106,-93.9508],"561":[43.8559,-95.6331],"562":[44.9902,-95.4915],"563":[45.6993,-94.4709],"564":[46.5349,-94.4426],"565":[46.7509,-96.1853],"566":[47.6963,-94.5624],"567":[48.2352,-96.3203],"570":[43.4805,-96.9383],"571":[43.5319,-96.7393],"572":[45.0107,-97.0909],"573":[43.8433,-98.3183],"574":[45.4105,-98.6568],"575":[43.9197,-100.4546],"576":[45.4114,-101.1521],"577":[44.1018,-103.2931],"580":[46.7328,-97.1178],"581":[46.85,-96.8302],"582":[48.0124,-97.3053],"583":[48.3594,-99.437],"584":[46.8271,-98.8541],"585":[46.835,-100.8443],"586":[46.8352,-102.8497],"587":[48.2547,-101.4988],"588":[48.1528,-103.5935],"590":[45.7042,-108.9399],"591":[45.7625,-108.5163],"592":[48.0732,-105.1516],"593":[46.5065,-105.4785],"594":[47.6395,-111.3713],"595":[48.4816,-109.4742],"596":[46.5932,-111.9771],"597":[45.7711,-111.6413],"598":[46.9001,-114.13],"599":[48.2847,-114.4756],"600":[42.2079,-87.9916],"601":[41.9715,-88.1772],"602":[42.0457,-87.6958],"603":[41.8887,-87.7955],"604":[41.5848,-87.8707],"605":[41.741,-88.179],"606":[41.8683,-87.683],"607":[41.9709,-87.8016],"608":[41.7682,-87.7271],"609":[40.9878,-87.8889],"610":[42.1815,-89.3802],"611":[42.2885,-89.048],"612":[41.4991,-90.4136],"613":[41.3391,-89.0693],"614":[40.8681,-90.4037],"615":[40.6742,-89.6191],"616":[40.7189,-89.6104],"617":[40.5127,-88.9437],"618":[40.1229,-88.1336],"619":[39.5993,-88.2378],"620":[38.9297,-90.0149],"622":[38.5195,-89.8934],"623":[39.9816,-91.1881],"624":[39.0254,-88.235],"625":[39.7393,-89.099],"626":[39.8276,-89.9211],"627":[39.7846,-89.6608],"628":[38.3155,-88.7532],"629":[37.6425,-88.9797],"630":[38.5295,-90.5518],"631":[38.6228,-90.3144],"633":[38.8394,-90.7742],"634":[39.833,-91.6215],"635":[40.1532,-92.5769],"636":[37.7775,-90.4986],"637":[37.3728,-89.6782],"638":[36.5919,-89.7693],"639":[36.8097,-90.5165],"640":[39.0258,-94.3112],"641":[39.109,-94.5565],"644":[40.0115,-94.6368],"645":[39.7681,-94.8254],"646":[39.8346,-93.5613],"647":[38.1554,-94.1578],"648":[37.0172,-94.4281],"650":[38.3973,-92.3916],"651":[38.5398,-92.2253],"652":[39.0307,-92.3055],"653":[38.702,-93.2736],"654":[37.8356,-91.84],"655":[37.693,-92.0736],"656":[37.0455,-93.241],"657":[37.0593,-93.0948],"658":[37.1915,-93.3024],"660":[38.9294,-95.0134],"661":[39.1154,-94.7183],"662":[38.9532,-94.704],"664":[39.1794,-96.3308],"665":[39.2245,-96.3136],"666":[39.0366,-95.726],"667":[37.529,-95.0213],"668":[38.3915,-96.2793],"669":[39.722,-97.729],"670":[37.6049,-97.2849],"671":[37.6628,-97.4213],"672":[37.692,-97.3317],"673":[37.199,-95.5772],"674":[38.839,-97.6406],"675":[38.1585,-98.348],"676":[39.1202,-99.394],"677":[39.3883,-101.1314],"678":[37.8731,-100.6215],"679":[37.1093,-101.0529],"680":[41.2983,-96.2437],"681":[41.241,-96.0508],"683":[40.4459,-96.7457],"684":[40.6953,-96.7034],"685":[40.802,-96.6738],"686":[41.4706,-97.4319],"687":[42.26,-97.3941],"688":[40.9513,-98.78],"689":[40.4628,-98.7],"690":[40.3375,-100.8398],"691":[41.1586,-101.3362],"692":[42.6228,-100.4154],"693":[42.1215,-103.2961],"700":[29.9432,-90.1827],"701":[29.974,-90.0606],"703":[29.6843,-90.7766],"704":[30.4829,-90.1376],"705":[30.209,-92.0855],"706":[30.3115,-93.2411],"707":[30.4561,-91.0257],"708":[30.4303,-91.0955],"710":[32.5166,-93.5182],"711":[32.467,-93.7513],"712":[32.5345,-92.1152],"713":[31.3044,-92.1695],"714":[31.4859,-92.9136],"716":[33.8194,-91.8815],"717":[33.3811,-92.8107],"718":[33.635,-93.8805],"719":[34.4413,-93.2703],"720":[34.9137,-92.2558],"721":[34.8884,-92.2061],"722":[34.7302,-92.3747],"723":[35.2179,-90.4027],"724":[35.9637,-90.6764],"725":[35.9199,-91.7689],"726":[36.2641,-92.9106],"727":[36.2136,-94.1699],"728":[35.3242,-93.259],"729":[35.3554,-94.2666],"730":[35.4084,-97.6004],"731":[35.4592,-97.5312],"734":[34.1631,-97.0594],"735":[34.5851,-98.5103],"736":[35.419,-99.2545],"737":[36.3675,-98.044],"738":[36.4524,-99.4495],"739":[36.7568,-101.4294],"740":[36.1845,-96.05],"741":[36.1123,-95.925],"743":[36.5334,-94.9949],"744":[35.7116,-95.4211],"745":[34.7426,-95.7317],"746":[36.7158,-97.1173],"747":[34.0003,-95.7272],"748":[35.2319,-96.8023],"749":[35.3565,-94.654],"750":[33.0317,-96.7888],"751":[32.6124,-96.5542],"752":[32.814,-96.7887],"754":[33.2835,-95.947],"755":[33.3689,-94.2649],"756":[32.5084,-94.6865],"757":[32.2879,-95.362],"758":[31.5408,-95.6854],"759":[31.3527,-94.4844],"760":[32.6856,-97.2979],"761":[32.7682,-97.3402],"762":[33.2036,-97.1979],"763":[33.8885,-98.6333],"764":[32.5505,-98.3836],"765":[31.0664,-97.6195],"766":[31.6759,-97.0871],"767":[31.5491,-97.1569],"768":[31.4835,-99.2337],"769":[31.3846,-100.5299],"770":[29.7818,-95.4421],"773":[30.2026,-95.3972],"774":[29.6902,-95.7581],"775":[29.5569,-95.1395],"776":[30.0922,-94.0154],"777":[30.0406,-94.1666],"778":[30.5957,-96.3213],"779":[28.9005,-96.9655],"780":[28.6043,-99.0976],"781":[29.4788,-98.1348],"782":[29.48,-98.5427],"783":[27.7983,-97.6902],"784":[27.6998,-97.414],"785":[26.2143,-98.0134],"786":[30.356,-97.7896],"787":[30.3055,-97.7663],"788":[29.2316,-100.252],"789":[29.9369,-96.8901],"790":[35.2448,-101.703],"791":[35.1846,-101.8636],"792":[34.3206,-100.6149],"793":[33.3507,-102.2357],"794":[33.5395,-101.9084],"795":[32.5835,-100.2451],"796":[32.4198,-99.7635],"797":[31.8911,-102.2973],"798":[31.2388,-105.667],"799":[31.7973,-106.3322],"800":[39.777,-104.9192],"801":[39.505,-104.8971],"802":[39.7563,-104.9723],"803":[40.0177,-105.2654],"804":[39.7625,-105.6907],"805":[40.3879,-105.081],"806":[40.2223,-104.755],"807":[40.3618,-103.2194],"808":[38.9031,-104.5089],"809":[38.8706,-104.7685],"810":[38.1142,-104.3946],"811":[37.418,-106.497],"812":[38.5231,-105.8412],"813":[37.3989,-108.1536],"814":[38.5029,-107.93],"815":[39.0975,-108.565],"816":[39.6543,-107.2839],"820":[41.2279,-105.078],"821":[44.5744,-110.5181],"822":[42.2201,-104.545],"823":[41.7882,-107.2429],"824":[44.4434,-108.8416],"825":[42.9367,-108.5027],"826":[42.9405,-106.323],"827":[44.1504,-105.3674],"828":[44.715,-106.8881],"829":[41.4978,-109.6808],"830":[43.4432,-110.6568],"831":[42.6128,-110.7511],"832":[42.9128,-112.3642],"833":[42.6731,-114.3264],"834":[43.6751,-111.9253],"835":[46.2189,-116.5375],"836":[43.6851,-116.4798],"837":[43.6202,-116.2097],"838":[47.7229,-116.7482],"840":[40.6282,-111.8314],"841":[40.7058,-111.9027],"843":[41.6831,-111.8962],"844":[41.2376,-112.0152],"845":[38.8143,-110.2706],"846":[40.0028,-111.6421],"847":[37.3917,-113.2676],"850":[33.532,-112.0924],"851":[33.086,-111.6266],"852":[33.4064,-111.8098],"853":[33.4461,-112.6342],"855":[33.3958,-110.388],"856":[31.8394,-110.6258],"857":[32.2384,-110.9476],"859":[34.2484,-109.9331],"860":[35.6072,-111.3495],"863":[34.6566,-112.2691],"864":[35.0078,-114.2232],"865":[36.012,-109.5014],"870":[35.0321,-106.7334],"871":[35.1289,-106.6578],"873":[35.5123,-108.659],"874":[36.7099,-108.2062],"875":[35.8599,-105.9722],"877":[35.9496,-104.868],"878":[34.0379,-107.2959],"879":[33.0041,-107.162],"880":[32.3019,-107.0153],"881":[34.3975,-103.3144],"882":[32.865,-104.0201],"883":[33.0019,-105.8867],"884":[35.4262,-103.8933],"890":[36.1664,-115.1167],"891":[36.1428,-115.2005],"893":[39.4785,-114.9497],"894":[39.5196,-119.3741],"895":[39.5284,-119.8156],"897":[39.1707,-119.7492],"898":[40.9224,-115.6772],"900":[34.0364,-118.2986],"902":[33.9289,-118.2943],"903":[33.9534,-118.3499],"904":[34.0239,-118.4814],"905":[33.837,-118.3321],"906":[33.9237,-118.0364],"907":[33.822,-118.1851],"908":[33.8074,-118.1681],"910":[34.1776,-118.1084],"911":[34.1534,-118.1278],"912":[34.1719,-118.2499],"913":[34.2681,-118.5582],"914":[34.1885,-118.4551],"915":[34.1879,-118.3216],"916":[34.1746,-118.3889],"917":[34.067,-117.8159],"918":[34.0855,-118.1341],"919":[32.6726,-117.0026],"920":[33.0809,-117.1281],"921":[32.79,-117.1226],"922":[33.6112,-116.1711],"923":[34.2736,-117.2848],"924":[34.1622,-117.3095],"925":[33.7761,-117.2287],"926":[33.6327,-117.7906],"927":[33.7339,-117.8748],"928":[33.8437,-117.818],"930":[34.2677,-119.0661],"931":[34.4607,-119.8291],"932":[36.0315,-119.3282],"933":[35.3384,-119.012],"934":[35.112,-120.536],"935":[34.8951,-118.1323],"936":[36.8253,-119.8463],"937":[36.7766,-119.7928],"939":[36.5804,-121.6253],"940":[37.5042,-122.2599],"941":[37.7604,-122.4378],"943":[37.4337,-122.137],"944":[37.5524,-122.3045],"945":[37.8653,-122.02],"946":[37.794,-122.222],"947":[37.876,-122.2728],"948":[37.9532,-122.3366],"949":[38.0927,-122.5998],"950":[37.1488,-121.8574],"951":[37.3108,-121.8583],"952":[38.0268,-121.2506],"953":[37.6102,-120.9366],"954":[38.6733,-122.8537],"955":[40.921,-124.0459],"956":[38.6286,-121.3546],"957":[38.6469,-121.2984],"958":[38.5712,-121.4355],"959":[39.3985,-121.609],"960":[40.6335,-122.3526],"961":[39.7122,-120.313],"967":[21.0238,-157.3278],"968":[21.3197,-157.8337],"970":[45.4358,-122.5771],"971":[45.4985,-123.1871],"972":[45.5097,-122.6566],"973":[44.8027,-123.1201],"974":[43.7422,-123.3291],"975":[42.3591,-122.9943],"976":[42.3038,-121.6393],"977":[44.107,-121.1295],"978":[45.5202,-118.6722],"979":[43.9727,-117.1881],"980":[47.5686,-122.1645],"981":[47.6086,-122.3298],"982":[48.2776,-122.2758],"983":[47.4015,-122.5542],"984":[47.2005,-122.4741],"985":[46.977,-123.0235],"986":[45.7911,-122.5827],"988":[47.5835,-119.8856],"989":[46.626,-120.4379],"990":[47.6842,-117.3785],"991":[47.6905,-117.7177],"992":[47.6826,-117.3755],"993":[46.2955,-119.046],"994":[46.3656,-117.2522],"995":[61.1835,-150.6177],"996":[60.6932,-151.6175],"997":[65.6265,-150.3115],"998":[58.1067,-134.3824],"999":[55.6546,-131.8944],"202":[38.8905,-77.0328],"203":[38.8677,-77.0046],"204":[38.9194,-77.0181],"205":[38.8957,-77.0265],"753":[32.814,-96.8428],"772":[29.7217,-95.3436]},"overall_median_small":4.0761,"overall_median_medium":2.3695,"overall_median_large":2.0419,"overall_low_mult_small":0.69,"overall_high_mult_small":1.46,"overall_low_mult_medium":0.817,"overall_high_mult_medium":1.312,"overall_low_mult_large":0.792,"overall_high_mult_large":1.297,"medium_threshold":13,"large_threshold":30,"total_orders_analyzed":3610};
+
+// Build lookup
+const PROD_MAP = {};
+SHIPPING_DATA.products.forEach(p => { PROD_MAP[p.sku] = p; });
+
+// ─── LINE ITEM MANAGEMENT ─────────────────────────────────────────────────────
+let lineCount = 0;
+
+function buildSkuOptions() {
+  return SHIPPING_DATA.products.map(p =>
+    `<option value="${p.sku}">${p.sku} — ${p.name}</option>`
+  ).join('');
+}
+
+function addLine() {
+  lineCount++;
+  const id = `line_${lineCount}`;
+  const div = document.createElement('div');
+  div.className = 'line-item';
+  div.id = id;
+  div.innerHTML = `
+    <div class="field">
+      <label>SKU</label>
+      <select>${buildSkuOptions()}</select>
+    </div>
+    <div class="field">
+      <label>Qty</label>
+      <input type="number" min="1" max="9999" value="12" style="text-align:center">
+    </div>
+    <button class="remove-btn" onclick="removeLine('${id}')" title="Remove">×</button>
+  `;
+  document.getElementById('lineItems').appendChild(div);
+}
+
+function removeLine(id) {
+  const el = document.getElementById(id);
+  const container = document.getElementById('lineItems');
+  if (container.children.length > 1) {
+    el.remove();
+  }
+}
+
+// ─── CALCULATION ENGINE ───────────────────────────────────────────────────────
+
+// Box dimensions (L x W x H inches) and dim weight at divisor 194
+const BOX_DIMS = {
+  'Bag 1':       [13,11,5],
+  'Cube 1':      [9,9,7],
+  'Cube 2':      [9,9,9],
+  'Box 2':       [15,7,9],
+  'Box 3':       [16,14,9],
+  'Box 5':       [16,13,11],
+  'Master 66.1': [21,14,7],
+  'Master 66.2': [23,15,8],
+};
+const DIM_DIV = 194;
+
+function dimWeight(boxName) {
+  const d = BOX_DIMS[boxName];
+  if (!d) return 0;
+  return (d[0]*d[1]*d[2]) / DIM_DIV;
+}
+
+// ── Packaging grid for JD6610 / JD6625 / JD6612 ──
+// Key: "sml_xl" → package string (+ separated for multi-box)
+const GRID_66XX = {
+  '0_1':'Bag 1',       '0_2':'Cube 2',      '0_3':'Box 2',       '0_4':'Box 2',
+  '0_5':'Box 3',       '0_6':'Box 3',        '0_7':'Box 3',       '0_8':'Box 3',
+  '0_9':'Box 5',       '0_10':'Box 5',       '0_11':'Box 5',
+  '1_0':'Bag 1',       '1_1':'Cube 2',       '1_2':'Box 2',       '1_3':'Box 2',
+  '1_4':'Box 3',       '1_5':'Box 3',        '1_6':'Box 3',       '1_7':'Box 3',
+  '1_8':'Box 5',       '1_9':'Box 5',        '1_10':'Box 5',      '1_11':'Master 66.2',
+  '2_0':'Box 2',       '2_1':'Box 2',        '2_2':'Box 3',       '2_3':'Box 3',
+  '2_4':'Box 3',       '2_5':'Box 3',        '2_6':'Box 3',       '2_7':'Box 3',
+  '2_8':'Box 5',       '2_9':'Box 5',        '2_10':'Master 66.2','2_11':'Master 66.2+Bag 1',
+  '3_0':'Box 2',       '3_1':'Box 2',        '3_2':'Box 3',       '3_3':'Box 3',
+  '3_4':'Box 3',       '3_5':'Box 3',        '3_6':'Box 5',       '3_7':'Box 5',
+  '3_8':'Box 5',       '3_9':'Master 66.2',  '3_10':'Master 66.2+Bag 1','3_11':'Master 66.2+Cube 1',
+  '4_0':'Box 3',       '4_1':'Box 3',        '4_2':'Box 3',       '4_3':'Box 3',
+  '4_4':'Box 3',       '4_5':'Box 5',        '4_6':'Box 5',       '4_7':'Box 5',
+  '4_8':'Master 66.2', '4_9':'Master 66.2+Bag 1','4_10':'Master 66.2+Cube 1','4_11':'Master 66.2+Box 2',
+  '5_0':'Box 3',       '5_1':'Box 3',        '5_2':'Box 3',       '5_3':'Box 3',
+  '5_4':'Box 3',       '5_5':'Box 5',        '5_6':'Master 66.2', '5_7':'Master 66.2',
+  '5_8':'Master 66.2+Bag 1','5_9':'Master 66.2+Cube 1','5_10':'Master 66.2+Box 2','5_11':'Master 66.2+Box 2',
+  '6_0':'Box 3',       '6_1':'Box 3',        '6_2':'Box 3',       '6_3':'Box 5',
+  '6_4':'Box 3',       '6_5':'Box 5',        '6_6':'Master 66.2', '6_7':'Master 66.2+Bag 1',
+  '6_8':'Master 66.2+Cube 1','6_9':'Master 66.2+Box 2','6_10':'Master 66.2+Box 2','6_11':'Master 66.2+Box 3',
+  '7_0':'Box 3',       '7_1':'Box 3',        '7_2':'Box 5',       '7_3':'Box 5',
+  '7_4':'Box 5',       '7_5':'Master 66.2',  '7_6':'Master 66.2+Bag 1','7_7':'Master 66.2+Cube 1',
+  '7_8':'Master 66.2+Box 2','7_9':'Master 66.2+Box 2','7_10':'Master 66.2+Box 3','7_11':'Master 66.2+Box 3',
+  '8_0':'Box 3',       '8_1':'Box 3',        '8_2':'Box 5',       '8_3':'Box 5',
+  '8_4':'Master 66.2', '8_5':'Box 5',        '8_6':'Master 66.2+Cube 1','8_7':'Master 66.2+Box 2',
+  '8_8':'Master 66.2+Box 2','8_9':'Master 66.2+Box 3','8_10':'Master 66.2+Box 3','8_11':'Master 66.2+Box 3',
+  '9_0':'Box 3',       '9_1':'Box 3',        '9_2':'Box 5',       '9_3':'Box 5',
+  '9_4':'Box 5',       '9_5':'Master 66.2+Cube 1','9_6':'Master 66.2+Box 2','9_7':'Master 66.2+Box 2',
+  '9_8':'Master 66.2+Box 3','9_9':'Master 66.2+Box 3','9_10':'Master 66.2+Box 3','9_11':'Master 66.2+Box 3',
+  '10_0':'Box 3',      '10_1':'Box 3',       '10_2':'Box 5',      '10_3':'Box 5',
+  '10_4':'Master 66.2+Cube 1','10_5':'Master 66.2+Box 2','10_6':'Master 66.2+Box 2','10_7':'Master 66.2+Box 3',
+  '10_8':'Master 66.2+Box 3','10_9':'Master 66.2+Box 3','10_10':'Master 66.2+Box 3','10_11':'Master 66.2+Box 3',
+  '11_0':'Box 5',      '11_1':'Box 5',       '11_2':'Box 5',      '11_3':'Box 5+Bag 1',
+  '11_4':'Box 5+Cube 1','11_5':'Box 5+Box 2','11_6':'Box 5+Box 2','11_7':'Master 66.2+Box 3',
+  '11_8':'Master 66.2+Box 3','11_9':'Master 66.2+Box 3','11_10':'Master 66.2+Box 3','11_11':'Master 66.2+Box 3',
+};
+
+// Overflow secondary box for 12+ pairs (remainder after dividing by 12)
+const OVERFLOW_SEC = {0:null,1:'Bag 1',2:'Box 2',3:'Box 2',4:'Box 2',
+                       5:'Box 3',6:'Box 3',7:'Box 3',8:'Box 3',9:'Box 3',10:'Box 3',11:'Box 3'};
+
+// Products using the 66xx packaging grid (SML group / XLXXL group)
+const PRODS_66XX = new Set(['JD6610','JD6625','JD6612']);
+const SML_SIZES  = new Set(['S','M','L']);
+const XL_SIZES   = new Set(['XL','XXL']);
+
+function skuFamily(sku) { return sku.split('-')[0]; }
+function skuSize(sku)   { return sku.split('-')[1] || ''; }
+
+function getBoxes66xx(smlQty, xlQty) {
+  const total = smlQty + xlQty;
+  if (total === 0) return [];
+  if (total >= 12) {
+    const masters = Math.floor(total / 12);
+    const rem     = total % 12;
+    const boxes   = Array(masters).fill('Master 66.2');
+    const sec     = OVERFLOW_SEC[rem];
+    if (sec) boxes.push(sec);
+    return boxes;
+  }
+  const key = `${smlQty}_${xlQty}`;
+  const pkg = GRID_66XX[key];
+  if (!pkg) return [];
+  return pkg.split('+').map(s => s.trim());
+}
+
+// Compute billable weight: distribute actual weight proportionally by pairs per box,
+// then take max(actual, dim) per box and sum.
+function calcBillableWeight(boxes, totalPairs, totalActualLbs) {
+  if (!boxes.length || totalPairs === 0) return totalActualLbs;
+  let remaining = totalPairs;
+  const pairsPerBox = boxes.map(box => {
+    const assigned = box.includes('Master') ? Math.min(12, remaining) : remaining;
+    remaining = Math.max(0, remaining - assigned);
+    return assigned;
+  });
+  let billable = 0;
+  boxes.forEach((box, i) => {
+    const frac    = pairsPerBox[i] / totalPairs;
+    const actLbs  = totalActualLbs * frac;
+    const dw      = dimWeight(box);
+    billable += Math.max(actLbs, dw);
+  });
+  return Math.round(billable * 100) / 100;
+}
+
+function calcLineWeight(prod, qty) {
+  return qty * prod.unit_wt_oz / 16;
+}
+
+// Haversine distance in miles
+function haversine(lat1, lng1, lat2, lng2) {
+  const R = 3958.8;
+  const dlat = (lat2-lat1)*Math.PI/180, dlng = (lng2-lng1)*Math.PI/180;
+  const a = Math.sin(dlat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dlng/2)**2;
+  return R * 2 * Math.asin(Math.sqrt(a));
+}
+
+// Three-tier ZIP rate lookup: small (<=12) / medium (13-29) / large (30+)
+// Proximity min threshold: n >= 3 qualifies a neighbor ZIP
+// Tier 1 - n >= 3 own data points: use directly
+// Tier 2 - n = 1-2 own data points: use own rate, widen bands
+// Tier 3 - n = 0: distance-weighted blend of 10 nearest ZIP3s with n >= 3
+function getZipStat(zip5, totalPairs) {
+  const zip3 = zip5.substring(0, 3).padStart(3, '0');
+
+  let table, fbRate, fbLow, fbHigh;
+  if (totalPairs >= SHIPPING_DATA.large_threshold) {
+    table  = SHIPPING_DATA.zip3_stats_large;
+    fbRate = SHIPPING_DATA.overall_median_large;
+    fbLow  = SHIPPING_DATA.overall_low_mult_large;
+    fbHigh = SHIPPING_DATA.overall_high_mult_large;
+  } else if (totalPairs >= SHIPPING_DATA.medium_threshold) {
+    table  = SHIPPING_DATA.zip3_stats_medium;
+    fbRate = SHIPPING_DATA.overall_median_medium;
+    fbLow  = SHIPPING_DATA.overall_low_mult_medium;
+    fbHigh = SHIPPING_DATA.overall_high_mult_medium;
+  } else {
+    table  = SHIPPING_DATA.zip3_stats_small;
+    fbRate = SHIPPING_DATA.overall_median_small;
+    fbLow  = SHIPPING_DATA.overall_low_mult_small;
+    fbHigh = SHIPPING_DATA.overall_high_mult_small;
+  }
+
+  const stat = table[zip3];
+
+  if (stat && stat.n >= 3) {
+    return { rate: stat.rate, low: stat.low, high: stat.high, n: stat.n, method: 'direct' };
+  }
+  if (stat && stat.n >= 1) {
+    return { rate: stat.rate, low: 0.65, high: 1.55, n: stat.n, method: 'limited' };
+  }
+
+  const qCoord = SHIPPING_DATA.zip3_centroids[zip3];
+  if (!qCoord) {
+    return { rate: fbRate, low: fbLow, high: fbHigh, n: 0, method: 'national' };
+  }
+  const qlat = qCoord[0], qlng = qCoord[1];
+  const neighbors = [];
+  for (const nz3 in table) {
+    const nstat = table[nz3];
+    if (nstat.n < 3) continue;
+    const nc = SHIPPING_DATA.zip3_centroids[nz3];
+    if (!nc) continue;
+    neighbors.push({ dist: haversine(qlat, qlng, nc[0], nc[1]), rate: nstat.rate, n: nstat.n });
+  }
+  neighbors.sort(function(a,b){ return a.dist - b.dist; });
+  const top = neighbors.slice(0, 10);
+  if (!top.length) {
+    return { rate: fbRate, low: fbLow, high: fbHigh, n: 0, method: 'national' };
+  }
+  const weights = top.map(function(nb){ return 1 / Math.max(nb.dist, 1); });
+  const totalW  = weights.reduce(function(s,w){ return s+w; }, 0);
+  const blended = top.reduce(function(s,nb,i){ return s + nb.rate*weights[i]; }, 0) / totalW;
+  const nearbyN = top.reduce(function(s,nb){ return s+nb.n; }, 0);
+  return {
+    rate: Math.round(blended * 10000) / 10000,
+    low: 0.65, high: 1.55,
+    n: nearbyN,
+    method: 'nearby'
+  };
+}
+
+function calculate() {
+  const errorEl = document.getElementById('errorMsg');
+  errorEl.className = 'error-msg';
+
+  // Validate ZIP
+  const zip = document.getElementById('zipcode').value.trim();
+  if (!/^\d{5}$/.test(zip)) {
+    errorEl.textContent = 'Please enter a valid 5-digit US ZIP code.';
+    errorEl.className = 'error-msg visible';
+    document.getElementById('zipcode').classList.add('invalid');
+    return;
+  }
+  document.getElementById('zipcode').classList.remove('invalid');
+
+  // Collect line items
+  const lines = [];
+  const lineEls = document.getElementById('lineItems').children;
+  for (const el of lineEls) {
+    const sku = el.querySelector('select').value;
+    const qty = parseInt(el.querySelector('input').value);
+    if (!sku || isNaN(qty) || qty < 1) continue;
+    const prod = PROD_MAP[sku];
+    if (!prod) continue;
+    lines.push({ sku, qty, prod });
+  }
+  if (lines.length === 0) {
+    errorEl.textContent = 'Please add at least one SKU.';
+    errorEl.className = 'error-msg visible';
+    return;
+  }
+
+  // ── PACKAGING & WEIGHT LOGIC ──────────────────────────────────────────────
+  // Split lines into: 66xx products (grid lookup) vs all others (flat ÷12)
+  let smlQty = 0, xlQty = 0, has66xx = false;
+  let otherPairs = 0;
+  let totalActualLbs = 0;
+  const lineDetails = [];
+
+  for (const line of lines) {
+    const fam  = skuFamily(line.sku);
+    const size = skuSize(line.sku);
+    const wt   = calcLineWeight(line.prod, line.qty);
+    totalActualLbs += wt;
+    lineDetails.push({ ...line, wt });
+
+    if (PRODS_66XX.has(fam)) {
+      has66xx = true;
+      if (SML_SIZES.has(size))      smlQty += line.qty;
+      else if (XL_SIZES.has(size))  xlQty  += line.qty;
+    } else {
+      otherPairs += line.qty;
+    }
+  }
+
+  // Get boxes for 66xx products (precise grid lookup)
+  const boxes66xx  = has66xx ? getBoxes66xx(smlQty, xlQty) : [];
+  // Get boxes for other products (flat rule: ceil(pairs/12))
+  const otherBoxes = otherPairs > 0 ? Math.ceil(otherPairs / 12) : 0;
+  const totalBoxes = boxes66xx.length + otherBoxes;
+
+  // Use actual weight for rate calculation.
+  // Dim weight is intentionally excluded: the historical zip3 rates were
+  // calibrated on actual weight, so any UPS dim premium is already reflected
+  // in the rates. Applying dim weight on top would double-count it.
+  const billableWeight = totalActualLbs;
+  const totalPairs = lines.reduce((s, l) => s + l.qty, 0);
+
+  // ── ZIP RATE LOOKUP ───────────────────────────────────────────────────────
+  const zip3 = zip.substring(0, 3).padStart(3, '0');
+  const isLargeOrder  = totalPairs >= SHIPPING_DATA.large_threshold;
+  const isMediumOrder = !isLargeOrder && totalPairs >= SHIPPING_DATA.medium_threshold;
+  const tierLabel = isLargeOrder ? 'large' : isMediumOrder ? 'medium' : 'small';
+  const zipStat = getZipStat(zip, totalPairs);
+
+  let midRate, lowMult, highMult, confidence, confPct, dataNote;
+  const n = zipStat.n;
+  midRate    = zipStat.rate;
+  lowMult    = zipStat.low;
+  highMult   = zipStat.high;
+  const method = zipStat.method;
+  if (method === 'direct') {
+    if (n >= 10) { confidence = 'HIGH'; confPct = 88; }
+    else         { confidence = 'MED';  confPct = 68; }
+    dataNote = `${n} ${tierLabel}-order shipments to ${zip3}xx area`;
+  } else if (method === 'limited') {
+    confidence = 'LOW'; confPct = 45;
+    dataNote = `${n} shipment${n>1?'s':''} to ${zip3}xx (limited — wider estimate range)`;
+  } else if (method === 'nearby') {
+    confidence = 'LOW'; confPct = 40;
+    dataNote = `No direct data for ${zip3}xx — estimated from ${n} nearby area shipments`;
+  } else {
+    confidence = 'ESTIMATED'; confPct = 30;
+    dataNote = `No regional data — using national median`;
+  }
+
+  const costLow  = Math.max(6, billableWeight * midRate * lowMult);
+  const costMid  = billableWeight * midRate;
+  const costHigh = billableWeight * midRate * highMult;
+
+  // ─── RENDER RESULTS ───────────────────────────────────────────────────────
+  const customer = document.getElementById('customer').value.trim();
+  const city     = document.getElementById('city').value.trim();
+  const state    = document.getElementById('state').value.trim().toUpperCase();
+  let dest = '';
+  if (customer) dest += customer + ' — ';
+  if (city && state) dest += `${city}, ${state} ${zip}`;
+  else if (city) dest += `${city} ${zip}`;
+  else dest += `ZIP ${zip}`;
+  document.getElementById('destDisplay').textContent = dest;
+
+  document.getElementById('costRange').textContent =
+    `$${costLow.toFixed(2)} – $${costHigh.toFixed(2)}`;
+  document.getElementById('costMid').textContent =
+    `$${costMid.toFixed(2)}`;
+
+  const fill = document.getElementById('confFill');
+  fill.style.width = confPct + '%';
+  fill.className = `confidence-fill ${confidence==='HIGH'?'conf-high':confidence==='MED'?'conf-med':'conf-low'}`;
+  document.getElementById('confLabel').textContent =
+    confidence==='HIGH' ? '● Strong data estimate' :
+    confidence==='MED'  ? '● Moderate data estimate' :
+    confidence==='LOW'  ? '◐ Limited area data' : '○ National average fallback';
+  document.getElementById('dataPoints').textContent = dataNote;
+
+  // Breakdown table
+  const tbody = document.getElementById('breakdownBody');
+  tbody.innerHTML = '';
+  for (const ld of lineDetails) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>
+        <div class="sku-name">${ld.sku}</div>
+        <div class="sku-detail">${ld.prod.name} · qty ${ld.qty}</div>
+      </td>
+      <td style="text-align:right;font-family:var(--mono);color:var(--text-muted)">—</td>
+      <td style="text-align:right;font-family:var(--mono)">${ld.wt.toFixed(1)} lb</td>
+    `;
+    tbody.appendChild(tr);
+  }
+
+  document.getElementById('totalWeight').textContent =
+    `${totalActualLbs.toFixed(1)} lbs`;
+  document.getElementById('totalBoxes').textContent =
+    `${totalBoxes} box${totalBoxes!==1?'es':''}`;
+
+  document.getElementById('disclaimer').textContent =
+    `Estimate based on ${SHIPPING_DATA.total_orders_analyzed.toLocaleString()} historical UPS shipments (2024–2026). ` +
+    `Orders use three size tiers (≤12 / 13–29 / 30+ pairs), each calibrated on matching historical orders. JD6610/6625/6612 use precise packaging grid. ` +
+    `Actual freight may vary due to carrier surcharges and fuel adjustments.`;
+
+  // Show result
+  document.getElementById('emptyState').style.display = 'none';
+  const est = document.getElementById('estimate');
+  est.className = 'estimate visible';
+}
+
+
+function resetForm() {
+  document.getElementById('estimate').className = 'estimate';
+  document.getElementById('emptyState').style.display = '';
+  document.getElementById('customer').value = '';
+  document.getElementById('city').value = '';
+  document.getElementById('state').value = '';
+  document.getElementById('zipcode').value = '';
+  document.getElementById('errorMsg').className = 'error-msg';
+  document.getElementById('zipcode').classList.remove('invalid');
+  // Reset to one line
+  document.getElementById('lineItems').innerHTML = '';
+  lineCount = 0;
+  addLine();
+}
+
+// Handle Enter key on ZIP
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') calculate();
+});
+
+// Init
+addLine();
+</script>
+</body>
+</html>
